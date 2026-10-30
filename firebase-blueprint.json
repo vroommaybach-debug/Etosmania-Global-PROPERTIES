@@ -1,0 +1,139 @@
+{
+  "entities": {
+    "property": {
+      "title": "Property",
+      "description": "Etosmania Global Properties Investment Limited property & land catalog item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "slug": { "type": "string" },
+        "price": { "type": "number" },
+        "mode": { "type": "string", "enum": ["sale", "rent"] },
+        "type": { "type": "string" },
+        "location": { "type": "string" },
+        "address": { "type": "string" },
+        "bedrooms": { "type": "number" },
+        "bathrooms": { "type": "number" },
+        "sizeSqm": { "type": "number" },
+        "parkingSpaces": { "type": "number" },
+        "yearBuilt": { "type": "string" },
+        "furnished": { "type": "boolean" },
+        "status": { "type": "string" },
+        "featured": { "type": "boolean" },
+        "description": { "type": "string" },
+        "features": { "type": "array" },
+        "images": { "type": "array" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "title", "price", "mode", "location", "address", "createdAt"]
+    },
+    "development": {
+      "title": "Development",
+      "description": "Multi-unit off-plan or completed real estate development project in Lagos",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "location": { "type": "string" },
+        "address": { "type": "string" },
+        "developer": { "type": "string" },
+        "status": { "type": "string", "enum": ["Off-plan", "Ready", "Selling Fast"] },
+        "startingPrice": { "type": "number" },
+        "overview": { "type": "string" },
+        "unitTypes": { "type": "array" },
+        "paymentPlan": { "type": "object" },
+        "masterplanImage": { "type": "string" },
+        "images": { "type": "array" },
+        "amenities": { "type": "array" },
+        "timeline": { "type": "array" },
+        "faqs": { "type": "array" },
+        "mapQuery": { "type": "string" },
+        "featured": { "type": "boolean" }
+      },
+      "required": ["id", "name", "location", "developer", "status", "startingPrice"]
+    },
+    "service": {
+      "title": "Service",
+      "description": "Core real estate pillar or advisory service offering managed via Admin CMS",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "tagline": { "type": "string" },
+        "description": { "type": "string" },
+        "deliverables": { "type": "array" },
+        "whatsappMessage": { "type": "string" },
+        "image": { "type": "string" },
+        "categoryBadge": { "type": "string" }
+      },
+      "required": ["id", "title", "tagline", "description", "deliverables"]
+    },
+    "enquiry": {
+      "title": "Enquiry",
+      "description": "Inbound client enquiry, inspection request, co-ownership reservation, or investor pack request",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["inspection", "development", "contact", "service", "co-ownership"] },
+        "name": { "type": "string", "maxLength": 120 },
+        "phone": { "type": "string", "maxLength": 50 },
+        "email": { "type": "string", "maxLength": 150 },
+        "subject": { "type": "string", "maxLength": 200 },
+        "details": { "type": "string", "maxLength": 2000 },
+        "propertyOrProjectTitle": { "type": "string", "maxLength": 200 },
+        "propertyOrProjectId": { "type": "string", "maxLength": 100 },
+        "preferredDate": { "type": "string", "maxLength": 50 },
+        "preferredTime": { "type": "string", "maxLength": 50 },
+        "budget": { "type": "string", "maxLength": 100 },
+        "createdAt": { "type": "string" },
+        "status": { "type": "string", "enum": ["new", "contacted", "resolved"] }
+      },
+      "required": ["id", "type", "name", "phone", "subject", "details", "createdAt", "status"]
+    },
+    "landingConfig": {
+      "title": "LandingConfig",
+      "description": "Etosmania Global Properties landing page CMS configuration, hero style mode, hero photos, headlines, co-ownership catalog, and admin gate security settings",
+      "type": "object",
+      "properties": {
+        "heroStyle": { "type": "string", "enum": ["full-bleed", "split"] },
+        "heroImage": { "type": "string" },
+        "heroSecondaryImage": { "type": "string" },
+        "heroHeadline": { "type": "string", "maxLength": 250 },
+        "heroSubline": { "type": "string", "maxLength": 500 },
+        "heroBadgeText": { "type": "string", "maxLength": 150 },
+        "aboutOfficeImage": { "type": "string" },
+        "whyEtosmaniaImage": { "type": "string" },
+        "coOwnershipBannerImage": { "type": "string" },
+        "featuredHighlightTitle": { "type": "string", "maxLength": 150 },
+        "missionStatement": { "type": "string", "maxLength": 500 },
+        "visionStatement": { "type": "string", "maxLength": 500 },
+        "gatePassword": { "type": "string", "maxLength": 128 },
+        "updatedAt": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "/properties/{propertyId}": {
+      "schema": "property",
+      "description": "Catalog of luxury properties for sale and rent in Lagos"
+    },
+    "/developments/{developmentId}": {
+      "schema": "development",
+      "description": "Catalog of off-plan and completed real estate developments in Lagos"
+    },
+    "/services/{serviceId}": {
+      "schema": "service",
+      "description": "Catalog of advisory and brokerage services"
+    },
+    "/enquiries/{enquiryId}": {
+      "schema": "enquiry",
+      "description": "Inbound viewing appointments, investor packs, and consultation requests"
+    },
+    "/settings/{settingId}": {
+      "schema": "landingConfig",
+      "description": "Website CMS settings including hero photo, landing highlights, and adminSecurity gate password"
+    }
+  }
+}

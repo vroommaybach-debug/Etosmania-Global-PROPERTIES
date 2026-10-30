@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Allow: /properties
+Allow: /co-ownership
+Allow: /developments
+Allow: /services
+Allow: /about
+Allow: /contact
+Disallow: /admin
+
+Sitemap: https://etosmaniaglobalproperties.com/sitemap.xml

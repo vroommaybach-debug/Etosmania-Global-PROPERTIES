@@ -1,0 +1,1033 @@
+import { Property, DevelopmentProject, ServiceItem, Testimonial, TeamMember, CoOwnershipProject } from '../types';
+
+export const CURRENCY_RATES = {
+  NGN: { rate: 1, symbol: '₦', label: 'NGN (₦)' },
+  USD: { rate: 0.00063, symbol: '$', label: 'USD ($)' },
+  GBP: { rate: 0.00049, symbol: '£', label: 'GBP (£)' },
+};
+
+export const OFFICE_DETAILS = {
+  companyName: 'Etosmania Global Properties Investment Limited',
+  shortName: 'Etosmania Global Properties',
+  slogan: 'Real Estate Gold You Are Looking For',
+  address: '10B Thomas Estate, Ajah, Lekki, Lagos State, Nigeria',
+  phone: '+234 913 845 3949',
+  secondaryPhone: '+234 904 732 5666',
+  whatsapp: '2349138453949',
+  email: 'etosmaniaproperties@gmail.com',
+  hours: 'Mon – Fri: 8:30 AM – 6:00 PM WAT | Sat: 10:00 AM – 4:00 PM (By Appointment)',
+  coordinates: {
+    lat: 6.4698,
+    lng: 3.5852,
+  },
+};
+
+export const ETOSMANIA_CREED = {
+  slogan: 'Real Estate Gold You Are Looking For',
+  mission:
+    'To deliver world-class residential and commercial properties that offer exceptional value and quality, we aim to transform our clients’ dreams into reality.',
+  vision:
+    "To become Nigeria's most trusted and innovative real estate developer, focusing on sustainable community-centered development.",
+  coreValues: [
+    {
+      title: 'Integrity',
+      description:
+        'Uncompromising honesty in land charting, root-of-title verification, and transparent pricing across every residential and commercial mandate.',
+    },
+    {
+      title: 'Professionalism',
+      description:
+        'Rigorous institutional standards in property acquisition, project delivery, legal documentation, and structured investment advisory.',
+    },
+    {
+      title: 'Customer Service',
+      description:
+        'Dedicated relationship management from your first inquiry at Thomas Estate, Ajah through physical allocation, key handover, and facility care.',
+    },
+    {
+      title: 'Continuous Learning',
+      description:
+        'Constantly evolving with Lagos urban growth corridors, sustainable construction technologies, and modern co-ownership wealth models.',
+    },
+  ],
+};
+
+export const COMPANY_VALUES = ETOSMANIA_CREED.coreValues;
+
+export const CO_OWNERSHIP_PROJECTS: CoOwnershipProject[] = [
+  {
+    id: 'EGP-CO-01',
+    title: 'Thomas Estate Sovereign Twin-Duplex Pool',
+    slug: 'thomas-estate-sovereign-duplex-pool',
+    location: 'Lekki Phase 1',
+    address: 'Thomas Estate Axis, Ajah–Lekki Corridor, Lagos',
+    assetType: 'Residential Duplex Pool',
+    totalValuation: 240000000,
+    pricePerSlot: 12000000,
+    totalSlots: 20,
+    availableSlots: 6,
+    minSlots: 1,
+    projectedAnnualYieldPct: 16.5,
+    projectedCapitalGrowthPct: 24.0,
+    holdPeriodYears: 3,
+    payoutFrequency: 'Bi-Annual',
+    titleDocument: "Governor's Consent",
+    legalStructure: 'Registered SPV Deed of Co-Ownership & Trustee Certificate',
+    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=85',
+    summary:
+      'Co-own a pair of high-demand 4-bedroom semi-detached duplexes in our flagship Thomas Estate, Ajah neighborhood. Generates steady executive rental cashflow plus rapid Lekki-Ajah capital appreciation.',
+    highlights: [
+      'Direct proximity to Etosmania HQ at 10B Thomas Estate, Ajah',
+      'Fully managed tenant placement and facility maintenance',
+      'Audited bi-annual rental distributions direct to co-owners',
+      'Guaranteed buy-back or secondary slot transfer window after 18 months',
+    ],
+  },
+  {
+    id: 'EGP-CO-02',
+    title: 'Admiralty Executive Short-Let Syndicate',
+    slug: 'admiralty-executive-short-let-syndicate',
+    location: 'Lekki Phase 1',
+    address: 'Off Admiralty Way, Lekki Phase 1, Lagos',
+    assetType: 'Short-Let Apartment Syndicate',
+    totalValuation: 360000000,
+    pricePerSlot: 15000000,
+    totalSlots: 24,
+    availableSlots: 9,
+    minSlots: 1,
+    projectedAnnualYieldPct: 21.8,
+    projectedCapitalGrowthPct: 20.0,
+    holdPeriodYears: 4,
+    payoutFrequency: 'Quarterly',
+    titleDocument: "Governor's Consent",
+    legalStructure: 'Fractional Title Certificate + Hospitality Revenue Trust',
+    image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1400&q=85',
+    summary:
+      'Fractional equity in a luxury block of furnished corporate apartments servicing expatriates, diaspora visitors, and oil & tech executives in Lekki Phase 1.',
+    highlights: [
+      '78% average historical occupancy across Lekki Phase 1 corporate stays',
+      'Quarterly dividend payouts with real-time owner booking privileges',
+      'Turnkey interior furnishing, 24/7 power, and concierge management',
+      'Zero landlord headaches—Etosmania Property Management runs daily operations',
+    ],
+  },
+  {
+    id: 'EGP-CO-03',
+    title: 'Ibeju-Lekki Express Commercial Land Bank',
+    slug: 'ibeju-lekki-express-commercial-land-bank',
+    location: 'Ibeju-Lekki',
+    address: 'Lekki-Epe Expressway Corridor, Ibeju-Lekki, Lagos',
+    assetType: 'Strategic Land Bank',
+    totalValuation: 150000000,
+    pricePerSlot: 5000000,
+    totalSlots: 30,
+    availableSlots: 11,
+    minSlots: 1,
+    projectedAnnualYieldPct: 0,
+    projectedCapitalGrowthPct: 38.5,
+    holdPeriodYears: 2,
+    payoutFrequency: 'Annual Exit',
+    titleDocument: 'Certificate of Occupancy (C of O)',
+    legalStructure: 'Co-Ownership Land Holding Trust & Survey Allocation',
+    image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1400&q=85',
+    summary:
+      'Acquire high-growth commercial acreage along the New International Airport and Deep Sea Port corridor without needing ₦150M upfront. Built for aggressive capital multiplication.',
+    highlights: [
+      'Verified Government C of O—100% free from government acquisition',
+      'Perimeter fenced, gated, and beaconed commercial super-plots',
+      'Structured 24-month bulk resale exit to logistics or retail developers',
+      'Accessible entry point at ₦5M per co-ownership slot',
+    ],
+  },
+  {
+    id: 'EGP-CO-04',
+    title: 'Victoria Island Grade-A Office Suite Syndicate',
+    slug: 'victoria-island-grade-a-office-syndicate',
+    location: 'Victoria Island',
+    address: 'Adeola Odeku Financial Axis, Victoria Island, Lagos',
+    assetType: 'Commercial Corporate Suite',
+    totalValuation: 500000000,
+    pricePerSlot: 25000000,
+    totalSlots: 20,
+    availableSlots: 5,
+    minSlots: 1,
+    projectedAnnualYieldPct: 18.2,
+    projectedCapitalGrowthPct: 22.0,
+    holdPeriodYears: 5,
+    payoutFrequency: 'Quarterly',
+    titleDocument: 'Certificate of Occupancy (C of O)',
+    legalStructure: 'Commercial SPV Equity Certificate & Lease Escrow',
+    image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=85',
+    summary:
+      'Co-own prime corporate commercial floor space in Victoria Island leased to multi-year institutional tenants on inflation-hedged service leases.',
+    highlights: [
+      '3-year locked corporate lease agreements with blue-chip tenants',
+      'Service charge and facility upkeep fully paid by commercial occupants',
+      'Quarterly cash distributions backed by commercial escrow accounts',
+      'Institutional legal documentation handled by Etosmania Advisory',
+    ],
+  },
+];
+
+export const PROPERTIES_DATA: Property[] = [
+  {
+    id: 'EGP-101',
+    title: 'The Sovereign Gold 5-Bedroom Detached Duplex',
+    slug: 'sovereign-gold-detached-duplex-thomas-estate-ajah',
+    price: 185000000,
+    location: 'Lekki Phase 1',
+    address: 'Thomas Estate, Ajah, Lekki Corridor, Lagos',
+    bedrooms: 5,
+    bathrooms: 6,
+    sqm: 480,
+    plotSizeSqm: 500,
+    type: 'Duplex',
+    status: 'Available',
+    featured: true,
+    coOwnershipEligible: true,
+    pricePerSlot: 18500000,
+    titleDocument: "Governor's Consent",
+    CompletionQuarter: 'Ready Now',
+    description:
+      'Located right inside the prestigious Thomas Estate, Ajah—moments from our corporate headquarters—The Sovereign Gold Duplex embodies Etosmania Global Properties’ commitment to world-class residential quality. Featuring double-height ceilings, an architectural portal facade, fitted chef kitchen, private cinema room, and full smart-home automation.',
+    highlights: [
+      'Prime gated enclave in Thomas Estate, Ajah with 24/7 uniformed security',
+      'Spacious 5 all-ensuite bedrooms plus self-contained boys quarters (BQ)',
+      'Custom fitted kitchen with double-door refrigerator, oven, and microwave',
+      'Stamped concrete forecourt parking for up to 5 SUVs',
+      'Eligible for outright purchase or 10-slot Co-Ownership acquisition',
+    ],
+    amenities: [
+      'Smart Door Locks',
+      'Private Cinema Room',
+      'Fitted Chef Kitchen',
+      'Inbuilt Ceiling Speakers',
+      '24/7 Estate Security',
+      'Treated Central Water Plant',
+      'Walk-in Master Closet',
+      'En-suite Boys Quarters',
+    ],
+    images: [
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1400&q=80',
+    ],
+    agent: {
+      name: 'Etosmania Residential Desk',
+      role: 'Head of Residential Sales & Acquisitions',
+      phone: '+234 913 845 3949',
+      image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80',
+    },
+    coordinates: { lat: 6.4698, lng: 3.5852 },
+  },
+  {
+    id: 'EGP-102',
+    title: 'Etosmania Gold Crest Commercial Plaza',
+    slug: 'etosmania-gold-crest-commercial-plaza-victoria-island',
+    price: 750000000,
+    location: 'Victoria Island',
+    address: 'Akin Adesola Commercial Axis, Victoria Island, Lagos',
+    bedrooms: 0,
+    bathrooms: 8,
+    sqm: 1150,
+    plotSizeSqm: 1200,
+    type: 'Commercial',
+    status: 'Available',
+    featured: true,
+    coOwnershipEligible: true,
+    pricePerSlot: 25000000,
+    titleDocument: 'Certificate of Occupancy (C of O)',
+    CompletionQuarter: 'Ready Now',
+    description:
+      'A high-visibility 4-floor Grade-A commercial building designed for corporate headquarters, private banking lounges, medical diagnostics, or luxury retail showrooms. Built with curtain-wall acoustic glazing, passenger elevator, dedicated transformer, and ample customer parking.',
+    highlights: [
+      '1,150 sqm open-plan lettable floor plates across 4 levels',
+      'High-traffic Victoria Island commercial arterial visibility',
+      'Dedicated 300KVA transformer and dual industrial soundproof generators',
+      'Projected 18%+ annual commercial lease yield',
+    ],
+    amenities: [
+      '8-Passenger Elevator',
+      'Dedicated 300KVA Transformer',
+      'Fiber-Optic Backbone',
+      'CCTV & Access Control',
+      '22-Car On-Site Parking',
+      'Industrial Fire Suppression',
+      'Executive Rooftop Terrace',
+      'Facility Management Office',
+    ],
+    images: [
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80',
+    ],
+    agent: {
+      name: 'Etosmania Commercial Advisory',
+      role: 'Director, Commercial Properties & Investment',
+      phone: '+234 913 845 3949',
+      image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=600&q=80',
+    },
+    coordinates: { lat: 6.4281, lng: 3.4219 },
+  },
+  {
+    id: 'EGP-103',
+    title: 'Royal Purple Havens — 600 SQM Serviced Land Plot',
+    slug: 'royal-purple-havens-serviced-land-plot-ibeju-lekki',
+    price: 38000000,
+    location: 'Ibeju-Lekki',
+    address: 'Eleko–Lekki Free Trade Zone Corridor, Ibeju-Lekki, Lagos',
+    bedrooms: 0,
+    bathrooms: 0,
+    sqm: 600,
+    plotSizeSqm: 600,
+    type: 'Land',
+    status: 'Available',
+    featured: true,
+    coOwnershipEligible: true,
+    pricePerSlot: 4750000,
+    titleDocument: 'Certificate of Occupancy (C of O)',
+    CompletionQuarter: 'Instant Physical Allocation',
+    description:
+      'True "Real Estate Gold" for forward-looking land investors. Located in the fastest-appreciating corridor in West Africa near the Lekki Deep Sea Port and Dangote Refinery axis. 100% dry table land with Government C of O, perimeter fencing, drainage channels, and instant physical beacon allocation.',
+    highlights: [
+      '100% dry land—no sand-filling required prior to foundation work',
+      'Verified Certificate of Occupancy (C of O) free from government encumbrance',
+      'Instant plot allocation upon initial deposit or outright settlement',
+      'Flexible 3, 6, and 12-month structured installment plans available',
+    ],
+    amenities: [
+      'Perimeter Fencing & Gatehouse',
+      'Interlocked Estate Roads',
+      'Concrete Drainage Network',
+      'Solar Street Lighting',
+      'Dedicated Security Patrol',
+      'Recreational Green Park',
+      'Instant Survey & Deed',
+      'Commercial & Residential Zones',
+    ],
+    images: [
+      'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1400&q=80',
+    ],
+    agent: {
+      name: 'Etosmania Land & Acreage Desk',
+      role: 'Lead Land Consultant & Surveyor',
+      phone: '+234 904 732 5666',
+      image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+    },
+    coordinates: { lat: 6.4589, lng: 3.8304 },
+  },
+  {
+    id: 'EGP-104',
+    title: 'Admiralty Crest 4-Bedroom Contemporary Terrace',
+    slug: 'admiralty-crest-4-bed-contemporary-terrace-lekki',
+    price: 165000000,
+    location: 'Lekki Phase 1',
+    address: 'Off Freedom Way, Lekki Phase 1, Lagos',
+    bedrooms: 4,
+    bathrooms: 5,
+    sqm: 340,
+    type: 'Terrace',
+    status: 'Available',
+    featured: true,
+    coOwnershipEligible: true,
+    pricePerSlot: 16500000,
+    titleDocument: "Governor's Consent",
+    CompletionQuarter: 'Ready Now',
+    description:
+      'Designed for both family living and high-yield short-let investment, this 4-bedroom tri-level terrace residence in Lekki Phase 1 delivers sleek contemporary lines, a private family lounge, communal swimming pool, and 24-hour power infrastructure.',
+    highlights: [
+      'Walking distance to Freedom Way and Admiralty Way lifestyle hubs',
+      'High rental demand: generates ₦18M–₦24M annually on corporate lease/short-let',
+      'Includes fitted European kitchen, air-conditioning pre-piping, and BQ',
+      'Full Etosmania Property Management onboarding available upon handover',
+    ],
+    amenities: [
+      'Communal Swimming Pool',
+      'Fitness Studio',
+      '24-Hour Power Supply',
+      'Fitted Kitchen',
+      'Automated Gate Access',
+      'Treated Borehole Water',
+      'CCTV Surveillance',
+      'Dedicated 2-Car Parking',
+    ],
+    images: [
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1400&q=80',
+    ],
+    agent: {
+      name: 'Etosmania Residential Desk',
+      role: 'Head of Residential Sales & Acquisitions',
+      phone: '+234 913 845 3949',
+      image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80',
+    },
+    coordinates: { lat: 6.4478, lng: 3.4723 },
+  },
+  {
+    id: 'EGP-105',
+    title: 'Ikoyi Sovereign Waterfront 5-Bedroom Villa',
+    slug: 'ikoyi-sovereign-waterfront-5-bedroom-villa',
+    price: 1450000000,
+    location: 'Ikoyi',
+    address: 'Old Ikoyi Waterfront Crescent, Ikoyi, Lagos',
+    bedrooms: 5,
+    bathrooms: 7,
+    sqm: 820,
+    plotSizeSqm: 1000,
+    type: 'Villa',
+    status: 'Available',
+    featured: true,
+    coOwnershipEligible: false,
+    titleDocument: 'Certificate of Occupancy (C of O)',
+    CompletionQuarter: 'Ready Now',
+    description:
+      'An architectural tour de force in Old Ikoyi. Set on 1,000 sqm with private infinity pool, internal passenger lift, double-height gallery living room, bulletproof security doors, and panoramic lagoon breeze.',
+    highlights: [
+      'Ultra-prime Old Ikoyi address with diplomatic-grade security',
+      'Internal hydraulic elevator connecting all 3 levels',
+      'Private swimming pool, outdoor entertainment pavilion, and 2-room BQ',
+      'Complete root-of-title dossier vetted by Etosmania Legal & Consultancy team',
+    ],
+    amenities: [
+      'Private Infinity Pool',
+      'Internal Passenger Elevator',
+      'Smart Home Automation',
+      'Private Cinema & Study',
+      'Wet & Dry Chef Kitchens',
+      'Bulletproof Security Doors',
+      '8-Car Forecourt',
+      '2-Room Boys Quarters',
+    ],
+    images: [
+      'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1400&q=80',
+    ],
+    agent: {
+      name: 'Etosmania Private Wealth Desk',
+      role: 'Principal Real Estate Consultant',
+      phone: '+234 913 845 3949',
+      image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=600&q=80',
+    },
+    coordinates: { lat: 6.4549, lng: 3.4246 },
+  },
+  {
+    id: 'EGP-106',
+    title: 'Thomas Estate Executive 1,000 SQM Twin-Plot Land',
+    slug: 'thomas-estate-executive-1000-sqm-twin-plot-ajah',
+    price: 110000000,
+    location: 'Lekki Phase 1',
+    address: 'Thomas Estate Main Boulevard, Ajah, Lekki, Lagos',
+    bedrooms: 0,
+    bathrooms: 0,
+    sqm: 1000,
+    plotSizeSqm: 1000,
+    type: 'Land',
+    status: 'Available',
+    featured: false,
+    coOwnershipEligible: true,
+    pricePerSlot: 11000000,
+    titleDocument: "Governor's Consent",
+    CompletionQuarter: 'Instant Allocation',
+    description:
+      'Rare 1,000 sqm fenced dry land right inside established Thomas Estate, Ajah. Ideal for building 4 units of semi-detached duplexes or a block of 8 luxury flats for immediate rental income or resale.',
+    highlights: [
+      'Directly within built-up Thomas Estate, Ajah—inspections available within 15 minutes from our office',
+      'Paved road access, existing power grid, and serene residential neighborhood',
+      'Suitable for residential development or joint-venture co-ownership',
+    ],
+    amenities: [
+      'Built-up Gated Estate',
+      'Paved Road Network',
+      'Existing Drainage',
+      'Registered Survey',
+      "Governor's Consent",
+      '100% Dry Table Land',
+    ],
+    images: [
+      'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1400&q=80',
+    ],
+    agent: {
+      name: 'Etosmania Land & Acreage Desk',
+      role: 'Lead Land Consultant & Surveyor',
+      phone: '+234 904 732 5666',
+      image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+    },
+    coordinates: { lat: 6.4705, lng: 3.5861 },
+  },
+  {
+    id: 'EGP-107',
+    title: 'Ikeja GRA Heritage 4-Bedroom Semi-Detached Duplex',
+    slug: 'ikeja-gra-heritage-4-bed-semi-detached-duplex',
+    price: 320000000,
+    location: 'Ikeja GRA',
+    address: 'Oduduwa Crescent Axis, Ikeja GRA, Lagos',
+    bedrooms: 4,
+    bathrooms: 5,
+    sqm: 410,
+    plotSizeSqm: 450,
+    type: 'Duplex',
+    status: 'Available',
+    featured: false,
+    coOwnershipEligible: false,
+    titleDocument: 'Certificate of Occupancy (C of O)',
+    CompletionQuarter: 'Ready Now',
+    description:
+      'Commanding mainland prestige in the leafy heart of Ikeja GRA. Minutes from Murtala Muhammed International Airport, this 4-bedroom semi-detached residence offers generous room volumes, acoustic double-glazed windows, and lush private courtyard space.',
+    highlights: [
+      '10 minutes drive to Lagos International & Domestic Airport terminals',
+      'Low-density tree-lined street in Old Ikeja GRA',
+      'Spacious master suite with walk-in wardrobe and spa bathroom',
+    ],
+    amenities: [
+      'Fitted Kitchen',
+      'En-suite Boys Quarters',
+      'Video Doorbell Entry',
+      'Solar Inverter System',
+      'Treated Water Plant',
+      '4-Car Private Parking',
+    ],
+    images: [
+      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=80',
+    ],
+    agent: {
+      name: 'Etosmania Residential Desk',
+      role: 'Head of Residential Sales & Acquisitions',
+      phone: '+234 913 845 3949',
+      image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80',
+    },
+    coordinates: { lat: 6.5818, lng: 3.3568 },
+  },
+  {
+    id: 'EGP-108',
+    title: 'Eko Atlantic Gold Horizon 3-Bedroom Sky Apartment',
+    slug: 'eko-atlantic-gold-horizon-3-bedroom-apartment',
+    price: 580000000,
+    location: 'Eko Atlantic',
+    address: 'Avenue Boulevard, Eko Atlantic City, Victoria Island, Lagos',
+    bedrooms: 3,
+    bathrooms: 4,
+    sqm: 295,
+    type: 'Apartment',
+    status: 'Off-Plan',
+    featured: true,
+    coOwnershipEligible: true,
+    pricePerSlot: 29000000,
+    titleDocument: 'Certificate of Occupancy (C of O)',
+    CompletionQuarter: 'Q4 2026',
+    description:
+      'Elevated coastal living inside Eko Atlantic City. Floor-to-ceiling ocean views, independent municipal power and water infrastructure, resort deck swimming pool, and USD-pegged rental value appreciation.',
+    highlights: [
+      'Uninterrupted Atlantic Ocean and Marina skyline panoramas',
+      'Structured milestone payment plan over 18 months',
+      'Co-ownership slots available for diaspora and local wealth builders',
+    ],
+    amenities: [
+      'Oceanfront Infinity Pool',
+      '24/7 Concierge Desk',
+      'High-Speed Elevators',
+      'Executive Gym & Spa',
+      'Underground Parking',
+      'District Cooling System',
+    ],
+    images: [
+      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1400&q=80',
+    ],
+    agent: {
+      name: 'Etosmania Private Wealth Desk',
+      role: 'Principal Real Estate Consultant',
+      phone: '+234 913 845 3949',
+      image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=600&q=80',
+    },
+    coordinates: { lat: 6.4093, lng: 3.4105 },
+  },
+];
+
+export const DEVELOPMENTS_DATA: DevelopmentProject[] = [
+  {
+    id: 'DEV-01',
+    name: 'Etosmania Gold Crest Courts, Ajah',
+    slug: 'etosmania-gold-crest-courts-ajah',
+    tagline: 'Community-Centered Luxury Duplexes & Terraces in the Heart of Ajah–Lekki',
+    location: 'Lekki Phase 1',
+    status: 'Under Construction',
+    completionDate: 'Q4 2026',
+    startingPrice: 95000000,
+    totalUnits: 32,
+    availableUnits: 11,
+    yieldEstimate: '18.5% p.a.',
+    heroImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85',
+    gallery: [
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1400&q=80',
+    ],
+    overview:
+      'Etosmania Gold Crest Courts is our signature residential community near Thomas Estate, Ajah. Designed around our vision of sustainable, community-centered development, it combines solar-hybrid street infrastructure, recreational green parks, and modern 3 & 4-bedroom homes.',
+    architecturalConcept:
+      'Tropical contemporary masonry with deep cantilevered sun-breakers, high-airflow casement glazing, and private family courtyards.',
+    features: [
+      'Central Solar-Hybrid Power Microgrid',
+      'Treated Water Plant & Underground Drainage',
+      'Children Play Park & Community Clubhouse',
+      '24/7 Biometric Access Control & CCTV',
+      'Dedicated Facility Management by Etosmania',
+      'Co-Ownership & Outright Purchase Options',
+    ],
+    milestones: [
+      {
+        stage: 'Land Acquisition, Title Verification & Perimeter Fencing',
+        date: 'Q2 2025',
+        completed: true,
+        description: 'Governor’s Consent perfected, perimeter walls erected, and soil testing completed.',
+      },
+      {
+        stage: 'Substructure & Raft Foundation Works',
+        date: 'Q4 2025',
+        completed: true,
+        description: 'Reinforced concrete foundations and underground drainage channels completed across Phase 1.',
+      },
+      {
+        stage: 'Superstructure & Roofing Carcass',
+        date: 'Q2 2026',
+        completed: false,
+        description: 'Blockwork, first and second-floor slabs, and hidden roof parapet installation currently underway.',
+      },
+      {
+        stage: 'Interior Finishing, Commissioning & Key Handover',
+        date: 'Q4 2026',
+        completed: false,
+        description: 'Sanitary wares, fitted kitchens, road interlocking, and final client allocation.',
+      },
+    ],
+    floorPlans: [
+      {
+        id: 'FP-01',
+        name: '3-Bedroom Executive Terrace + BQ',
+        bedrooms: 3,
+        sqm: 260,
+        priceFrom: '₦95,000,000',
+        features: ['All Rooms En-suite', 'Fitted Kitchen', '2-Car Parking', 'Service Quarters'],
+      },
+      {
+        id: 'FP-02',
+        name: '4-Bedroom Semi-Detached Duplex + BQ',
+        bedrooms: 4,
+        sqm: 360,
+        priceFrom: '₦135,000,000',
+        features: ['Family Lounge', 'Walk-in Master Closet', '3-Car Parking', 'Smart Lock Entry'],
+      },
+      {
+        id: 'FP-03',
+        name: '5-Bedroom Fully Detached Sovereign Villa',
+        bedrooms: 5,
+        sqm: 480,
+        priceFrom: '₦185,000,000',
+        features: ['Private Cinema Room', 'Penthouse Master Suite', '5-Car Forecourt', 'Optional Plunge Pool'],
+      },
+    ],
+  },
+  {
+    id: 'DEV-02',
+    name: 'Purple Haven Serviced Land & Villas, Ibeju-Lekki',
+    slug: 'purple-haven-serviced-land-villas-ibeju-lekki',
+    tagline: 'Verified C of O Land & Turnkey Investment Plots on the New Lagos Growth Axis',
+    location: 'Ibeju-Lekki',
+    status: 'Pre-Launch',
+    completionDate: 'Q2 2026 (Infrastructure)',
+    startingPrice: 25000000,
+    totalUnits: 120,
+    availableUnits: 48,
+    yieldEstimate: '35%+ Capital Growth p.a.',
+    heroImage: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1600&q=85',
+    gallery: [
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1400&q=80',
+    ],
+    overview:
+      'Strategically positioned along the Ibeju-Lekki industrial and aviation corridor, Purple Haven offers both serviced residential plots (300 sqm & 600 sqm) and commercial highway plots with guaranteed physical allocation.',
+    architecturalConcept:
+      'Master-planned sites-and-services community with zoned residential avenues, commercial retail boulevard, and green buffer corridors.',
+    features: [
+      'Government Certificate of Occupancy (C of O)',
+      '100% Dry Table Land — Instant Allocation',
+      'Gatehouse, Perimeter Wall & Security Post',
+      'Paved Estate Boulevard & Streetlights',
+      'Flexible 6 to 12-Month Payment Plans',
+      'Co-Ownership Land Banking Slots from ₦5M',
+    ],
+    milestones: [
+      {
+        stage: 'Survey Charting & Perimeter Fencing',
+        date: 'Q4 2025',
+        completed: true,
+        description: 'Complete perimeter fencing, gatehouse construction, and beacon layout completed.',
+      },
+      {
+        stage: 'Road Grading & Drainage Network',
+        date: 'Q1 2026',
+        completed: true,
+        description: 'Main estate boulevard graded and concrete drainage channels cast.',
+      },
+      {
+        stage: 'Phase 1 Batch Allocation Ceremony',
+        date: 'Q2 2026',
+        completed: false,
+        description: 'Physical beacon handover, Deed of Assignment signing, and survey distribution.',
+      },
+    ],
+    floorPlans: [
+      {
+        id: 'FP-04',
+        name: '300 SQM Residential Starter Plot',
+        bedrooms: 0,
+        sqm: 300,
+        priceFrom: '₦25,000,000',
+        features: ['Ideal for Single Duplex', 'Instant Allocation', 'Registered Survey Included'],
+      },
+      {
+        id: 'FP-05',
+        name: '600 SQM Full Sovereign Plot',
+        bedrooms: 0,
+        sqm: 600,
+        priceFrom: '₦38,000,000',
+        features: ['Ideal for Twin Duplexes or Flats', 'C of O Title', 'Corner Piece Options'],
+      },
+      {
+        id: 'FP-06',
+        name: '1,000 SQM Commercial Express Plot',
+        bedrooms: 0,
+        sqm: 1000,
+        priceFrom: '₦75,000,000',
+        features: ['High-Traffic Commercial Zoning', 'Suitable for Warehousing/Retail', 'Co-Ownership Eligible'],
+      },
+    ],
+  },
+  {
+    id: 'DEV-03',
+    name: 'Etosmania Commercial Towers, Victoria Island',
+    slug: 'etosmania-commercial-towers-victoria-island',
+    tagline: 'Grade-A Corporate Offices & Co-Owned Commercial Suites in Victoria Island',
+    location: 'Victoria Island',
+    status: 'Ready to Move',
+    completionDate: 'Ready Now',
+    startingPrice: 120000000,
+    totalUnits: 18,
+    availableUnits: 4,
+    yieldEstimate: '19.2% p.a.',
+    heroImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85',
+    gallery: [
+      'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1400&q=80',
+      'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1400&q=80',
+    ],
+    overview:
+      'Purpose-built commercial office suites and retail showrooms in Victoria Island. Available for outright corporate acquisition or fractional co-ownership with quarterly rental dividends.',
+    architecturalConcept:
+      'Double-glazed solar-control curtain wall facade with modular column-free office floor plates.',
+    features: [
+      'Dual High-Speed Elevators',
+      'Dedicated Power Redundancy & Inverters',
+      'Turnkey Facility Management by Etosmania',
+      'Multi-Year Corporate Lease Demand',
+    ],
+    milestones: [
+      {
+        stage: 'Structural Completion & Cladding',
+        date: 'Q2 2025',
+        completed: true,
+        description: 'Full structural and glazing works completed.',
+      },
+      {
+        stage: 'MEP Commissioning & Handover',
+        date: 'Q4 2025',
+        completed: true,
+        description: 'Elevators, HVAC, and generators commissioned; suites ready for occupation.',
+      },
+    ],
+    floorPlans: [
+      {
+        id: 'FP-07',
+        name: '150 SQM Executive Office Suite',
+        bedrooms: 0,
+        sqm: 150,
+        priceFrom: '₦120,000,000',
+        features: ['2 Private Washrooms', 'Kitchenette', '3 Reserved Parking Bays'],
+      },
+      {
+        id: 'FP-08',
+        name: '320 SQM Half-Floor Corporate Wing',
+        bedrooms: 0,
+        sqm: 320,
+        priceFrom: '₦245,000,000',
+        features: ['Boardroom Ready', 'Private Lift Lobby', '6 Reserved Parking Bays'],
+      },
+    ],
+  },
+];
+
+// All 8 Core Services explicitly featured on the Etosmania Global Properties banner
+export const SERVICES_DATA: ServiceItem[] = [
+  {
+    id: 'consultancy',
+    title: 'Real Estate Consultancy',
+    tagline: 'End-to-End Title Due Diligence, Land Charting & Acquisition Advisory',
+    category: 'Advisory & Consulting',
+    description:
+      'Before you commit a single naira to Lagos property, our Real Estate Consultancy desk conducts exhaustive legal and technical verification at the Lagos State Land Registry and Surveyor-General’s office—ensuring every acquisition is 100% free from government encumbrance or family disputes.',
+    deliverables: [
+      'Official Land Registry Title Search (C of O, Governor’s Consent, Gazette)',
+      'Survey Coordinate Charting at the Office of the Surveyor-General',
+      'Market Valuation & Comparative Price Benchmarking',
+      'Contract of Sale, Deed of Assignment & Perfection Advisory',
+    ],
+    iconName: 'ShieldCheck',
+    ctaText: 'Book Consultancy Session',
+    whatsappMessage:
+      'Hello Etosmania Global Properties, I would like to book a Real Estate Consultancy session for property/land verification and acquisition advisory.',
+  },
+  {
+    id: 'investment',
+    title: 'Real Estate Investment',
+    tagline: 'High-Yield Land Banking, Off-Plan Equity & Rental Wealth Portfolios',
+    category: 'Wealth & Co-Ownership',
+    description:
+      'We structure high-growth real estate investment vehicles tailored to capital preservation and aggressive appreciation across Ajah, Lekki Phase 1, Ibeju-Lekki, and Victoria Island—turning idle capital into tangible Real Estate Gold.',
+    deliverables: [
+      'Short-to-Medium Term Land Flipping & Bulk Acreage Banking',
+      'Early-Entry Off-Plan Development Allocations (25%–40% Project Uplift)',
+      'Turnkey Short-Let & Corporate Rental Income Assets',
+      'Diaspora Escrow-Backed Investment Execution & Video Reporting',
+    ],
+    iconName: 'TrendingUp',
+    ctaText: 'Start Investment Plan',
+    whatsappMessage:
+      'Hello Etosmania Global Properties, I want to explore your Real Estate Investment opportunities and current ROI projections.',
+  },
+  {
+    id: 'land-houses',
+    title: 'Sales of Land and Houses',
+    tagline: 'Verified Dry Plots, Serviced Estates & Finished Luxury Homes',
+    category: 'Sales & Acquisition',
+    description:
+      'From 300 sqm and 600 sqm serviced plots with instant physical allocation to move-in-ready detached duplexes and terraces in Thomas Estate, Ajah and Lekki, we connect buyers directly to verified land and houses with zero hidden charges.',
+    deliverables: [
+      'Serviced Residential & Commercial Land Plots (C of O & Governor’s Consent)',
+      'Instant Physical Plot Allocation & Beacon Handover',
+      'Finished 3, 4 & 5-Bedroom Terraces, Semi-Detached & Detached Duplexes',
+      'Flexible 3 to 12-Month Installment Payment Structures',
+    ],
+    iconName: 'Home',
+    ctaText: 'Browse Land & Houses',
+    whatsappMessage:
+      'Hello Etosmania Global Properties, I am interested in buying verified Land or a House in Lagos. Please share available options and payment plans.',
+  },
+  {
+    id: 'co-ownership',
+    title: 'Real Estate Co-ownership',
+    tagline: 'Fractional Property Ownership & Shared Rental Dividends from ₦5M',
+    category: 'Wealth & Co-Ownership',
+    description:
+      'Own a legal share of prime Lagos duplexes, short-let apartments, commercial plazas, or strategic land banks alongside vetted co-investors. Enjoy proportional rental income and capital appreciation backed by registered SPV Deeds and Trustee protection.',
+    deliverables: [
+      'Vetted Co-Ownership Property Slots Starting from ₦5M – ₦25M',
+      'Registered Deed of Co-Ownership & Fractional Equity Certificate',
+      'Automated Quarterly / Bi-Annual Rental Dividend Payouts',
+      'Clear Secondary Slot Exit & Buy-Back Windows',
+    ],
+    iconName: 'Users',
+    ctaText: 'Explore Co-Ownership Slots',
+    whatsappMessage:
+      'Hello Etosmania Global Properties, I want to learn more about your Real Estate Co-ownership slots and how to reserve a share.',
+  },
+  {
+    id: 'residential-sales',
+    title: 'Residential Sales',
+    tagline: 'Curated Family Homes, Duplexes, Terraces & Penthouses Across Lagos',
+    category: 'Sales & Acquisition',
+    description:
+      'Whether you are buying your family’s forever home in Thomas Estate, Ajah, upgrading to Lekki Phase 1, or securing a diaspora residence in Ikoyi or Ikeja GRA, our Residential Sales team guides you from private physical or live video tour to key handover.',
+    deliverables: [
+      'Private Chauffeur-Driven or Live WhatsApp Video Property Inspections',
+      'Architectural & Structural Quality Inspection Prior to Purchase',
+      'Direct Developer Price Negotiation & Mortgage/Payment Structuring',
+      'Seamless Closing, Deed Execution & Immediate Key Handover',
+    ],
+    iconName: 'Building2',
+    ctaText: 'Schedule Home Viewing',
+    whatsappMessage:
+      'Hello Etosmania Global Properties, I am looking for a residential property to buy. Please share your available houses and duplexes.',
+  },
+  {
+    id: 'commercial-properties',
+    title: 'Commercial Properties',
+    tagline: 'Corporate Office Plazas, Retail Showrooms, Warehouses & Express Plots',
+    category: 'Sales & Acquisition',
+    description:
+      'Power your business expansion or commercial real estate portfolio with high-visibility office buildings, retail complexes, hospitality assets, and expressway commercial land across Victoria Island, Lekki-Epe Expressway, and Ikeja.',
+    deliverables: [
+      'Grade-A Office Suites & Standalone Corporate Buildings',
+      'High-Traffic Retail Plazas, Supermarkets & Showroom Spaces',
+      'Logistics, Industrial & Commercial Highway Land Along Ibeju-Lekki',
+      'Commercial Lease Structuring & Institutional Tenant Placement',
+    ],
+    iconName: 'Briefcase',
+    ctaText: 'Inquire Commercial Assets',
+    whatsappMessage:
+      'Hello Etosmania Global Properties, I am inquiring about Commercial Properties (offices, plazas, or commercial land) in Lagos.',
+  },
+  {
+    id: 'property-management',
+    title: 'Property Management',
+    tagline: 'Hands-Free Tenant Vetting, Rent Collection & 24/7 Facility Upkeep',
+    category: 'Asset Management',
+    description:
+      'Protect the structural integrity and cashflow of your residential or commercial real estate. Our Property Management division handles corporate tenant sourcing, rent recovery, power/water facility operations, and preventative maintenance—ideal for busy executives and diaspora landlords.',
+    deliverables: [
+      'Rigorous Corporate & Executive Tenant KYC & Lease Enforcement',
+      'Prompt Rent & Service Charge Collection with Audited Remittance',
+      'Preventative MEP, Generator, Plumbing & Structural Maintenance',
+      'Quarterly Photographic & Financial Asset Performance Reports',
+    ],
+    iconName: 'KeyRound',
+    ctaText: 'Onboard Your Property',
+    whatsappMessage:
+      'Hello Etosmania Global Properties, I own property in Lagos and would like to engage your Property Management team.',
+  },
+  {
+    id: 'investment-consulting',
+    title: 'Investment Consulting',
+    tagline: 'Bespoke Wealth Roadmaps, Joint Ventures & Portfolio Rebalancing',
+    category: 'Advisory & Consulting',
+    description:
+      'Work one-on-one with senior investment strategists to design a custom multi-year real estate wealth blueprint—combining cash-flowing residential rentals, commercial leases, co-ownership syndicates, and high-upside land banking.',
+    deliverables: [
+      '1-on-1 Real Estate Portfolio Audit & Yield Optimization Strategy',
+      'Joint Venture (JV) Structuring for Landowners & Developers',
+      'Inflation-Hedged Capital Allocation Across Lagos Growth Corridors',
+      'Exit Timing, Resale Marketing & Capital Gains Reinvestment Planning',
+    ],
+    iconName: 'Compass',
+    ctaText: 'Book Strategy Call',
+    whatsappMessage:
+      'Hello Etosmania Global Properties, I would like to schedule a 1-on-1 Investment Consulting strategy session.',
+  },
+];
+
+export const TESTIMONIALS: Testimonial[] = [
+  {
+    id: 'TEST-01',
+    quote:
+      'Visiting Etosmania Global Properties at their Thomas Estate, Ajah office gave me immediate confidence. Within three weeks, their consultancy team charted my survey, verified the Governor’s Consent, and handed over the keys to my 4-bedroom duplex.',
+    author: 'Engr. Babatunde & Mrs. Kemi O.',
+    role: 'Energy Executive & Homeowner',
+    location: 'Lekki, Lagos',
+    propertyPurchased: '4-Bedroom Semi-Detached Duplex, Ajah',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+  },
+  {
+    id: 'TEST-02',
+    quote:
+      'As a UK-based healthcare professional, I wanted to invest in Lagos real estate without fear of encumbrance or stories. I started with two Real Estate Co-ownership slots and two plots in Ibeju-Lekki. Every document and dividend has arrived right on schedule.',
+    author: 'Dr. Chidinma Nwosu',
+    role: 'Consultant Physician (Diaspora Investor)',
+    location: 'London, United Kingdom',
+    propertyPurchased: 'Co-Ownership Syndicate & 2 Plots in Purple Haven',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
+  },
+  {
+    id: 'TEST-03',
+    quote:
+      'Etosmania’s Property Management team took over our family’s commercial plaza and four residential units in Ajah. They placed corporate tenants, overhauled the facility maintenance, and boosted our net annual rental income by 32%.',
+    author: 'Chief Adebayo Adeleke',
+    role: 'Commercial Landlord & Industrialist',
+    location: 'Victoria Island, Lagos',
+    propertyPurchased: 'Full-Service Property Management Mandate',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
+  },
+];
+
+export const TEAM_MEMBERS: TeamMember[] = [
+  {
+    id: 'TEAM-01',
+    name: 'Managing Director / CEO',
+    role: 'Principal Partner & Chief Investment Strategist',
+    bio: 'Leads Etosmania Global Properties Investment Limited with a clear mandate: delivering world-class residential and commercial properties that transform client dreams into tangible Real Estate Gold.',
+    credentials: 'Real Estate Development, Investment Structuring & Urban Growth Strategy',
+    image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 'TEAM-02',
+    name: 'Head of Legal & Title Consultancy',
+    role: 'Director, Real Estate Consultancy & Co-Ownership Trust',
+    bio: 'Oversees root-of-title verification at the Lagos State Land Registry, SPV co-ownership deeds, and zero-encumbrance land charting for local and diaspora investors.',
+    credentials: 'LL.B, B.L — Property Law, Conveyancing & Co-Ownership Structuring',
+    image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80',
+  },
+  {
+    id: 'TEAM-03',
+    name: 'Head of Sales, Land & Property Management',
+    role: 'Director, Residential, Commercial & Facility Operations',
+    bio: 'Manages physical site allocations across Ajah, Lekki, and Ibeju-Lekki alongside full-lifecycle tenant and facility management for residential and commercial landlords.',
+    credentials: 'B.Sc. Estate Management — Asset Valuation & Facility Operations',
+    image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=800&q=80',
+  },
+];
+
+export const WHY_ETOSMANIA_POINTS = [
+  {
+    number: '01',
+    title: '100% Verified Root of Title',
+    description:
+      'Every land plot, residential duplex, and commercial property undergoes strict Registry and Surveyor-General charting before listing—guaranteeing zero government acquisition.',
+  },
+  {
+    number: '02',
+    title: '8 Integrated Real Estate Services',
+    description:
+      'From Real Estate Consultancy and Sales of Land & Houses to Co-Ownership and Property Management, we handle your entire wealth lifecycle under one roof.',
+  },
+  {
+    number: '03',
+    title: 'Accessible Co-Ownership Wealth',
+    description:
+      'You do not need ₦200M upfront to own prime Lagos real estate. Co-own vetted duplexes, short-lets, and commercial assets with legally protected fractional slots.',
+  },
+  {
+    number: '04',
+    title: 'Physical Presence in Thomas Estate, Ajah',
+    description:
+      'Visit our headquarters at 10B Thomas Estate, Ajah, Lekki or book a live 4K WhatsApp video inspection on 0913 845 3949 from anywhere in the world.',
+  },
+];
+
+// Keep alias for compatibility
+export const WHY_BAHAMS_POINTS = WHY_ETOSMANIA_POINTS;
+
+export const HOW_IT_WORKS_STEPS = [
+  {
+    step: '01',
+    title: 'Consult & Define Your Goal',
+    description:
+      'Connect with our advisory desk via WhatsApp (0913 845 3949) or at 10B Thomas Estate, Ajah to match your budget with verified land, houses, commercial assets, or co-ownership slots.',
+  },
+  {
+    step: '02',
+    title: 'Inspect & Verify Title Dossier',
+    description:
+      'Join a private physical site tour or live diaspora video walk-through. Review the complete Survey Plan, C of O, or Governor’s Consent with your legal counsel.',
+  },
+  {
+    step: '03',
+    title: 'Execute & Receive Allocation',
+    description:
+      'Complete payment outright or via structured installments. Receive your executed Deed of Assignment, physical plot allocation, house keys, or Co-Ownership Certificate.',
+  },
+];

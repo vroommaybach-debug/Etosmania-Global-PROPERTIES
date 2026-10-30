@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidAdminSecurityPayload(data) {
+      return (!('gatePassword' in data) || (data.gatePassword is string && data.gatePassword.size() >= 6 && data.gatePassword.size() <= 128));
+    }
+
+    // Properties collection: Public read for property seekers; write permitted for catalog management
+    match /properties/{propertyId} {
+      allow read: if true;
+      allow create, update, delete: if isValidId(propertyId);
+    }
+
+    // Developments collection: Public read; write permitted for development management
+    match /developments/{developmentId} {
+      allow read: if true;
+      allow create, update, delete: if isValidId(developmentId);
+    }
+
+    // Services collection: Public read; write permitted for advisory services management
+    match /services/{serviceId} {
+      allow read: if true;
+      allow create, update, delete: if isValidId(serviceId);
+    }
+
+    // Enquiries collection: Public create for site visitors submitting viewing / consultation requests; read/update for operational management
+    match /enquiries/{enquiryId} {
+      allow read: if true;
+      allow create: if isValidId(enquiryId);
+      allow update, delete: if isValidId(enquiryId);
+    }
+
+    // Settings / Landing CMS configuration & Admin Gate Security (settings/landingConfig and settings/adminSecurity)
+    match /settings/{settingId} {
+      allow read: if true;
+      allow create, update: if isValidId(settingId) && isValidAdminSecurityPayload(request.resource.data);
+      allow delete: if isValidId(settingId);
+    }
+
+    // Connection health check path
+    match /test/{testId} {
+      allow read: if true;
+    }
+
+    // Default fallback deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
