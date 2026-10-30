@@ -10,41 +10,66 @@ service cloud.firestore {
       return (!('gatePassword' in data) || (data.gatePassword is string && data.gatePassword.size() >= 6 && data.gatePassword.size() <= 128));
     }
 
-    // Properties collection: Public read for property seekers; write permitted for catalog management
+    // Properties collection: Public read (get & list) for property seekers; write permitted for catalog management
     match /properties/{propertyId} {
-      allow read: if true;
+      allow get, list: if true;
       allow create, update, delete: if isValidId(propertyId);
     }
 
-    // Developments collection: Public read; write permitted for development management
+    // Developments collection: Public read (get & list); write permitted for development management
     match /developments/{developmentId} {
-      allow read: if true;
+      allow get, list: if true;
       allow create, update, delete: if isValidId(developmentId);
     }
 
-    // Services collection: Public read; write permitted for advisory services management
+    // Services collections: Public read (get & list); write permitted for advisory services management
     match /services/{serviceId} {
-      allow read: if true;
+      allow get, list: if true;
       allow create, update, delete: if isValidId(serviceId);
     }
 
-    // Enquiries collection: Public create for site visitors submitting viewing / consultation requests; read/update for operational management
-    match /enquiries/{enquiryId} {
-      allow read: if true;
-      allow create: if isValidId(enquiryId);
-      allow update, delete: if isValidId(enquiryId);
+    match /servicesCatalog/{serviceId} {
+      allow get, list: if true;
+      allow create, update, delete: if isValidId(serviceId);
     }
 
-    // Settings / Landing CMS configuration & Admin Gate Security (settings/landingConfig and settings/adminSecurity)
+    // Co-Ownership Catalog collection: Public read (get & list); write permitted for co-ownership management
+    match /coOwnershipCatalog/{assetId} {
+      allow get, list: if true;
+      allow create, update, delete: if isValidId(assetId);
+    }
+
+    // Bookings & Inquiries collections: Public create for site visitors; read/update/delete for admin desk management
+    match /bookings/{bookingId} {
+      allow get, list: if true;
+      allow create, update, delete: if isValidId(bookingId);
+    }
+
+    match /inquiries/{inquiryId} {
+      allow get, list: if true;
+      allow create, update, delete: if isValidId(inquiryId);
+    }
+
+    match /enquiries/{enquiryId} {
+      allow get, list: if true;
+      allow create, update, delete: if isValidId(enquiryId);
+    }
+
+    // Site Settings & Admin Gate Security
+    match /siteSettings/{settingId} {
+      allow get, list: if true;
+      allow create, update, delete: if isValidId(settingId);
+    }
+
     match /settings/{settingId} {
-      allow read: if true;
+      allow get, list: if true;
       allow create, update: if isValidId(settingId) && isValidAdminSecurityPayload(request.resource.data);
       allow delete: if isValidId(settingId);
     }
 
     // Connection health check path
     match /test/{testId} {
-      allow read: if true;
+      allow get, list: if true;
     }
 
     // Default fallback deny

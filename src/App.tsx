@@ -55,7 +55,7 @@ export default function App() {
           <SEOHead />
           {/* Standard Website Loader for Every Page Transition */}
           <PageLoader />
-          <div className="min-h-screen flex flex-col bg-[#FAF9FC] text-[#120721]">
+          <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-[#07142B]">
             {/* Sticky Global Top Bar */}
             <Navbar />
 

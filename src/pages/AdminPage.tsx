@@ -1,1076 +1,634 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useRef } from 'react';
 import {
-  Building2,
   Plus,
   Trash2,
-  Edit3,
-  MessageCircle,
+  Building2,
+  Calendar,
+  Mail,
   RotateCcw,
-  Save,
   Lock,
-  LogOut,
-  Layers,
-  Settings,
-  Inbox,
-  Users,
-  Briefcase,
+  CheckCircle2,
+  Edit3,
   Upload,
   Camera,
   Link as LinkIcon,
+  Save,
   X,
-  Check,
-  Sparkles,
-  Maximize2,
-  Layout,
-  Image as ImageIcon,
+  Briefcase,
+  Users,
+  Settings,
+  Layers,
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
+import { verifyAdminPasscode } from '../utils/adminAuth';
 import {
-  Property,
   LocationArea,
   PropertyType,
-  PropertyStatus,
-  CoOwnershipProject,
+  Property,
   DevelopmentProject,
   ServiceItem,
-  HeroStyleMode,
+  CoOwnershipAsset,
 } from '../types';
-import { formatNairaCompact } from '../utils/formatters';
+import { compressImageFileToDataUrl, isValidImageSource } from '../utils/imageUpload';
 import { SafeImage } from '../components/common/SafeImage';
-import { getWhatsAppUrl } from '../utils/whatsapp';
-import {
-  verifyAdminGatePassword,
-  isAdminSessionUnlocked,
-  setAdminSessionUnlocked,
-  DEFAULT_ADMIN_GATE_SECRET,
-} from '../utils/adminAuth';
-import {
-  processUploadedImageFile,
-  normalizeExternalImageUrl,
-  detectImageSourceType,
-} from '../utils/imageUpload';
 
 type AdminTab =
   | 'properties'
-  | 'co-ownership'
   | 'developments'
+  | 'coownership'
   | 'services'
-  | 'landing'
-  | 'enquiries';
-
-const CURATED_PRESETS = [
-  {
-    label: 'Thomas Estate Luxury Duplex',
-    url: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=85',
-  },
-  {
-    label: 'Contemporary Terrace Court',
-    url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85',
-  },
-  {
-    label: 'Victoria Island Corporate Tower',
-    url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85',
-  },
-  {
-    label: 'Ibeju-Lekki Serviced Land Plot',
-    url: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1600&q=85',
-  },
-  {
-    label: 'Waterfront Sky Apartment',
-    url: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1600&q=85',
-  },
-  {
-    label: 'Old Ikoyi Sovereign Villa',
-    url: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1600&q=85',
-  },
-];
-
-interface MediaUploadManagerProps {
-  images: string[];
-  onChange: (nextImages: string[]) => void;
-  multiple?: boolean;
-  label?: string;
-}
-
-/**
- * Universal Media Uploader supporting:
- * 1. Device File Upload (JPG, PNG, WEBP, HEIC)
- * 2. Direct Camera Capture (Native Mobile Camera + Live WebRTC Camera Viewfinder Modal)
- * 3. External Image Links (Google Drive, Dropbox, Pinterest, Direct URLs)
- * 4. Curated Architectural Presets
- */
-const MediaUploadManager: React.FC<MediaUploadManagerProps> = ({
-  images,
-  onChange,
-  multiple = true,
-  label = 'Property Photos (Upload, Camera, or Link)',
-}) => {
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const cameraInputRef = useRef<HTMLInputElement | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-
-  const [linkInput, setLinkInput] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState('');
-  const [liveCameraOpen, setLiveCameraOpen] = useState(false);
-
-  const stopCameraStream = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    setLiveCameraOpen(false);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-      }
-    };
-  }, []);
-
-  const appendOrReplaceImages = (newUrls: string[]) => {
-    const valid = newUrls.filter(Boolean);
-    if (valid.length === 0) return;
-    if (multiple) {
-      onChange([...images, ...valid]);
-    } else {
-      onChange([valid[0]]);
-    }
-  };
-
-  const handleFilesSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const fileList = e.target.files;
-    if (!fileList || fileList.length === 0) return;
-
-    setIsUploading(true);
-    setUploadStatus('Optimizing photo(s)...');
-    try {
-      const processed: string[] = [];
-      for (let i = 0; i < fileList.length; i++) {
-        const dataUrl = await processUploadedImageFile(fileList[i]);
-        processed.push(dataUrl);
-      }
-      appendOrReplaceImages(processed);
-      setUploadStatus(`✓ Added ${processed.length} photo(s)`);
-    } catch (err) {
-      setUploadStatus(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setIsUploading(false);
-      e.target.value = '';
-    }
-  };
-
-  const handleAddLink = () => {
-    if (!linkInput.trim()) return;
-    const normalized = normalizeExternalImageUrl(linkInput.trim());
-    if (normalized) {
-      appendOrReplaceImages([normalized]);
-      setUploadStatus(`✓ Added ${detectImageSourceType(normalized)}`);
-      setLinkInput('');
-    }
-  };
-
-  const startLiveCamera = async () => {
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        cameraInputRef.current?.click();
-        return;
-      }
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 } },
-        audio: false,
-      });
-      streamRef.current = stream;
-      setLiveCameraOpen(true);
-      window.setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {});
-        }
-      }, 100);
-    } catch {
-      // Fallback to native file/camera input if camera permission declined or unavailable
-      cameraInputRef.current?.click();
-    }
-  };
-
-  const snapPhotoFromStream = () => {
-    if (!videoRef.current) return;
-    const video = videoRef.current;
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth || 1280;
-    canvas.height = video.videoHeight || 720;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.84);
-      appendOrReplaceImages([dataUrl]);
-      setUploadStatus('✓ Captured photo from camera');
-    }
-    stopCameraStream();
-  };
-
-  const removeImageAt = (idx: number) => {
-    onChange(images.filter((_, i) => i !== idx));
-  };
-
-  const makePrimaryImage = (idx: number) => {
-    if (idx === 0) return;
-    const target = images[idx];
-    const rest = images.filter((_, i) => i !== idx);
-    onChange([target, ...rest]);
-  };
-
-  return (
-    <div className="space-y-3 p-4 rounded-xl bg-[#FAF9FC] border border-purple-200/80">
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-bold text-[#2E1065] flex items-center gap-1.5">
-          <ImageIcon className="w-4 h-4 text-[#D4AF37]" />
-          <span>{label}</span>
-        </label>
-        {uploadStatus && (
-          <span className="text-[11px] font-mono text-emerald-700 font-semibold">
-            {uploadStatus}
-          </span>
-        )}
-      </div>
-
-      {/* Action Buttons: Upload File, Take Camera Photo */}
-      <div className="grid grid-cols-2 gap-2.5">
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
-          className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg bg-white hover:bg-purple-50 border border-purple-200 text-xs font-semibold text-[#3B0764] transition-all cursor-pointer"
-        >
-          <Upload className="w-3.5 h-3.5 text-[#D4AF37]" />
-          <span>{isUploading ? 'Processing...' : 'Upload Photo(s)'}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={startLiveCamera}
-          className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg bg-[#3B0764] hover:bg-[#4C1D95] text-white text-xs font-semibold transition-all cursor-pointer"
-        >
-          <Camera className="w-3.5 h-3.5 text-[#F59E0B]" />
-          <span>Take Camera Photo</span>
-        </button>
-
-        {/* Hidden Native Inputs */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple={multiple}
-          onChange={handleFilesSelected}
-          className="hidden"
-        />
-        <input
-          ref={cameraInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={handleFilesSelected}
-          className="hidden"
-        />
-      </div>
-
-      {/* Live Camera Viewfinder Modal */}
-      {liveCameraOpen && (
-        <div className="p-3 rounded-xl bg-[#120721] text-white space-y-3 border border-[#D4AF37]">
-          <div className="flex items-center justify-between text-xs font-mono text-[#F59E0B]">
-            <span>Live Camera Capture</span>
-            <button
-              type="button"
-              onClick={stopCameraStream}
-              className="text-purple-200 hover:text-white cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-48 object-cover rounded-lg bg-black"
-          />
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={snapPhotoFromStream}
-              className="flex-1 py-2.5 rounded-lg bg-[#D4AF37] text-[#120721] font-bold text-xs uppercase tracking-wider cursor-pointer"
-            >
-              Snap Photo
-            </button>
-            <button
-              type="button"
-              onClick={stopCameraStream}
-              className="px-4 py-2.5 rounded-lg bg-white/10 text-white text-xs font-semibold cursor-pointer"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Paste Image URL / Google Drive / Dropbox Link */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <LinkIcon className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={linkInput}
-            onChange={(e) => setLinkInput(e.target.value)}
-            placeholder="Paste image link (Web URL, Google Drive, Dropbox)..."
-            className="w-full pl-8 pr-3 py-2 rounded-lg bg-white border border-purple-200 text-xs focus:outline-none focus:border-[#3B0764]"
-          />
-        </div>
-        <button
-          type="button"
-          onClick={handleAddLink}
-          className="px-3.5 py-2 rounded-lg bg-purple-100 hover:bg-purple-200 text-[#3B0764] font-bold text-xs cursor-pointer shrink-0"
-        >
-          Add Link
-        </button>
-      </div>
-
-      {/* Quick Preset Selector */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-        <span className="text-[10px] font-mono text-slate-400 shrink-0">Presets:</span>
-        {CURATED_PRESETS.map((preset) => (
-          <button
-            key={preset.label}
-            type="button"
-            onClick={() => appendOrReplaceImages([preset.url])}
-            className="px-2 py-1 rounded bg-white border border-purple-100 hover:border-[#D4AF37] text-[10px] text-slate-600 whitespace-nowrap cursor-pointer"
-          >
-            + {preset.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Current Images Preview Grid */}
-      {images.length > 0 && (
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 pt-1">
-          {images.map((imgUrl, idx) => (
-            <div
-              key={idx}
-              className={`relative group h-20 rounded-lg overflow-hidden border-2 ${
-                idx === 0 ? 'border-[#D4AF37]' : 'border-purple-200'
-              }`}
-            >
-              <SafeImage src={imgUrl} alt={`Media ${idx + 1}`} className="w-full h-full object-cover" />
-              {idx === 0 && (
-                <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-[#120721]/85 text-[#F59E0B] font-mono text-[9px] font-bold">
-                  Cover
-                </span>
-              )}
-              <div className="absolute inset-0 bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
-                {multiple && idx > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => makePrimaryImage(idx)}
-                    title="Set as Primary Cover"
-                    className="px-1.5 py-1 rounded bg-[#D4AF37] text-[#120721] text-[9px] font-bold cursor-pointer"
-                  >
-                    Cover
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => removeImageAt(idx)}
-                  title="Remove Photo"
-                  className="p-1 rounded bg-red-600 text-white cursor-pointer"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
+  | 'cms'
+  | 'leads';
 
 export const AdminPage: React.FC = () => {
-  const [isUnlocked, setIsUnlocked] = useState<boolean>(() => isAdminSessionUnlocked());
-  const [passwordInput, setPasswordInput] = useState('');
-  const [gateError, setGateError] = useState('');
-  const [activeTab, setActiveTab] = useState<AdminTab>('properties');
-  const [toastMsg, setToastMsg] = useState('');
-
   const {
     properties,
     developments,
-    coOwnershipProjects,
     services,
-    enquiries,
-    landingConfig,
+    coOwnershipAssets,
+    siteConfig,
+    bookings,
+    inquiries,
     addProperty,
     updateProperty,
     deleteProperty,
     addDevelopment,
     updateDevelopment,
     deleteDevelopment,
-    addCoOwnershipProject,
-    updateCoOwnershipProject,
-    deleteCoOwnershipProject,
     addService,
     updateService,
     deleteService,
-    updateEnquiryStatus,
-    deleteEnquiry,
-    updateLandingConfig,
-    resetToDefaults,
+    addCoOwnershipAsset,
+    updateCoOwnershipAsset,
+    deleteCoOwnershipAsset,
+    updateSiteConfig,
+    updateBookingStatus,
+    resetDemoData,
   } = useData();
 
-  const triggerToast = (msg: string) => {
-    setToastMsg(msg);
-    window.setTimeout(() => setToastMsg(''), 3000);
-  };
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passcode, setPasscode] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [activeTab, setActiveTab] = useState<AdminTab>('properties');
+  const [statusBanner, setStatusBanner] = useState<string>('');
 
-  // ============================================================================
-  // 1. PROPERTY CREATE / EDIT STATE
-  // ============================================================================
+  // =========================================================================
+  // 1. PROPERTY EDITOR STATE (CREATE OR EDIT)
+  // =========================================================================
   const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [propTitle, setPropTitle] = useState('');
-  const [propPrice, setPropPrice] = useState(145000000);
-  const [propLocation, setPropLocation] = useState<LocationArea>('Lekki Phase 1');
-  const [propAddress, setPropAddress] = useState('Thomas Estate, Ajah, Lekki, Lagos');
-  const [propType, setPropType] = useState<PropertyType>('Duplex');
-  const [propStatus, setPropStatus] = useState<PropertyStatus>('Available');
-  const [propBeds, setPropBeds] = useState(4);
-  const [propBaths, setPropBaths] = useState(5);
-  const [propSqm, setPropSqm] = useState(420);
-  const [propTitleDoc, setPropTitleDoc] = useState("Governor's Consent");
-  const [propCoOwn, setPropCoOwn] = useState(true);
-  const [propSlotPrice, setPropSlotPrice] = useState(14500000);
-  const [propDesc, setPropDesc] = useState(
-    'Verified mandate by Etosmania Global Properties Investment Limited.'
-  );
-  const [propHighlightsText, setPropHighlightsText] = useState(
-    '100% Verified Root of Title\nPrime Gated Enclave with 24/7 Security\nImmediate Physical or Video Inspection Available'
-  );
-  const [propAmenitiesText, setPropAmenitiesText] = useState(
-    '24/7 Security, Fitted Kitchen, Treated Water, Smart Locks, En-suite BQ'
-  );
-  const [propImages, setPropImages] = useState<string[]>([CURATED_PRESETS[0].url]);
+  const [propPrice, setPropPrice] = useState('');
+  const [propLocation, setPropLocation] = useState('Thomas Estate, Ajah, Lekki, Lagos');
+  const [propArea, setPropArea] = useState<LocationArea>('Ajah');
+  const [propType, setPropType] = useState<PropertyType>('Residential');
+  const [propBeds, setPropBeds] = useState('4');
+  const [propBaths, setPropBaths] = useState('5');
+  const [propSqm, setPropSqm] = useState('500');
+  const [propDesc, setPropDesc] = useState('');
+  const [propImages, setPropImages] = useState<string[]>([
+    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1400&q=80',
+  ]);
+  const [newImageUrl, setNewImageUrl] = useState('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  const startEditingProperty = (p: Property) => {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+
+  // =========================================================================
+  // 2. DEVELOPMENT EDITOR STATE
+  // =========================================================================
+  const [editingDevId, setEditingDevId] = useState<string | null>(null);
+  const [devName, setDevName] = useState('');
+  const [devTagline, setDevTagline] = useState('');
+  const [devLocation, setDevLocation] = useState('Ajah, Lekki, Lagos');
+  const [devStartingPrice, setDevStartingPrice] = useState('₦88,000,000');
+  const [devCompletion, setDevCompletion] = useState('Q4 2025');
+  const [devStatus, setDevStatus] = useState<'Ongoing' | 'Completed' | 'Upcoming'>('Ongoing');
+  const [devTotalUnits, setDevTotalUnits] = useState('24');
+  const [devAvailableUnits, setDevAvailableUnits] = useState('8');
+  const [devHeroImage, setDevHeroImage] = useState(
+    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=85'
+  );
+  const [devDesc, setDevDesc] = useState('');
+
+  // =========================================================================
+  // 3. CO-OWNERSHIP EDITOR STATE
+  // =========================================================================
+  const [editingCoId, setEditingCoId] = useState<string | null>(null);
+  const [coTitle, setCoTitle] = useState('');
+  const [coLocation, setCoLocation] = useState('Thomas Estate Corridor, Ajah, Lekki');
+  const [coTotalValue, setCoTotalValue] = useState('₦180,000,000');
+  const [coPricePerSlot, setCoPricePerSlot] = useState('₦9,000,000');
+  const [coTotalSlots, setCoTotalSlots] = useState('20');
+  const [coAvailableSlots, setCoAvailableSlots] = useState('6');
+  const [coProjectedYield, setCoProjectedYield] = useState('19.5% p.a. Rental Yield');
+  const [coMinimumHold, setCoMinimumHold] = useState('18 Months');
+  const [coImage, setCoImage] = useState(
+    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=85'
+  );
+
+  // =========================================================================
+  // 4. SERVICE PILLAR EDITOR STATE
+  // =========================================================================
+  const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
+  const [srvNumber, setSrvNumber] = useState('09');
+  const [srvTitle, setSrvTitle] = useState('');
+  const [srvShortDesc, setSrvShortDesc] = useState('');
+  const [srvDescription, setSrvDescription] = useState('');
+  const [srvCtaText, setSrvCtaText] = useState('Consult an Advisor');
+
+  // =========================================================================
+  // 5. SITE & HERO CMS STATE
+  // =========================================================================
+  const [cmsConfig, setCmsConfig] = useState(siteConfig);
+
+  const showToast = (msg: string) => {
+    setStatusBanner(msg);
+    setTimeout(() => setStatusBanner(''), 3500);
+  };
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (verifyAdminPasscode(passcode)) {
+      setIsAuthenticated(true);
+      setAuthError('');
+    } else {
+      setAuthError('Invalid passcode. Hint: ETOSMANIA2025');
+    }
+  };
+
+  // Image Upload / Camera / Link Handlers
+  const handleFileOrCameraUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    onSuccessUrl: (dataUrl: string) => void
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingImage(true);
+    try {
+      const compressedDataUrl = await compressImageFileToDataUrl(file);
+      onSuccessUrl(compressedDataUrl);
+      showToast('Photo uploaded & optimized!');
+    } catch (err) {
+      console.error(err);
+      showToast('Could not process image file.');
+    } finally {
+      setIsUploadingImage(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleAddImageUrl = () => {
+    if (!isValidImageSource(newImageUrl)) return;
+    setPropImages((prev) => [...prev, newImageUrl.trim()]);
+    setNewImageUrl('');
+  };
+
+  // Property Submit (Add or Update)
+  const handleSaveProperty = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const numericPrice = Number(propPrice.replace(/[^0-9]/g, '')) || 50000000;
+    const cleanedImages =
+      propImages.length > 0
+        ? propImages
+        : [
+            'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1400&q=80',
+          ];
+
+    if (editingPropertyId) {
+      const existing = properties.find((p) => p.id === editingPropertyId);
+      if (existing) {
+        await updateProperty({
+          ...existing,
+          title: propTitle,
+          price: numericPrice,
+          priceFormatted: `₦${numericPrice.toLocaleString()}`,
+          location: propLocation,
+          area: propArea,
+          type: propType,
+          bedrooms: Number(propBeds) || 0,
+          bathrooms: Number(propBaths) || 0,
+          sqm: Number(propSqm) || 500,
+          description: propDesc,
+          images: cleanedImages,
+        });
+        showToast(`Updated property ${editingPropertyId}`);
+      }
+    } else {
+      await addProperty({
+        title: propTitle,
+        price: numericPrice,
+        priceFormatted: `₦${numericPrice.toLocaleString()}`,
+        location: propLocation,
+        area: propArea,
+        type: propType,
+        status: 'Available',
+        bedrooms: Number(propBeds) || 0,
+        bathrooms: Number(propBaths) || 0,
+        sqm: Number(propSqm) || 500,
+        featured: true,
+        isNew: true,
+        description:
+          propDesc ||
+          'Verified property with clean title offered by Etosmania Global Properties Investment Limited.',
+        amenities: [
+          'Governor’s Consent / C of O Verified',
+          '24/7 Estate Security',
+          'Paved Road Network',
+          'Instant Allocation',
+        ],
+        images: cleanedImages,
+        coordinates: { lat: 6.4698, lng: 3.5852 },
+        agent: {
+          name: 'Etosmania Advisory Desk',
+          role: 'Senior Property Consultant',
+          phone: '+234 913 845 3949',
+          whatsapp: '2349138453949',
+          avatar:
+            'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80',
+        },
+      });
+      showToast('Published new property listing!');
+    }
+
+    resetPropertyForm();
+  };
+
+  const startEditProperty = (p: Property) => {
     setEditingPropertyId(p.id);
     setPropTitle(p.title);
-    setPropPrice(p.price);
+    setPropPrice(String(p.price));
     setPropLocation(p.location);
-    setPropAddress(p.address);
+    setPropArea(p.area);
     setPropType(p.type);
-    setPropStatus(p.status);
-    setPropBeds(p.bedrooms);
-    setPropBaths(p.bathrooms);
-    setPropSqm(p.sqm);
-    setPropTitleDoc(p.titleDocument);
-    setPropCoOwn(Boolean(p.coOwnershipEligible));
-    setPropSlotPrice(p.pricePerSlot || Math.round(p.price / 10));
+    setPropBeds(String(p.bedrooms));
+    setPropBaths(String(p.bathrooms));
+    setPropSqm(String(p.sqm));
     setPropDesc(p.description);
-    setPropHighlightsText((p.highlights || []).join('\n'));
-    setPropAmenitiesText((p.amenities || []).join(', '));
-    setPropImages(p.images?.length ? p.images : [CURATED_PRESETS[0].url]);
-    window.scrollTo({ top: 160, behavior: 'smooth' });
+    setPropImages(p.images || []);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const resetPropertyForm = () => {
     setEditingPropertyId(null);
     setPropTitle('');
-    setPropPrice(145000000);
-    setPropLocation('Lekki Phase 1');
-    setPropAddress('Thomas Estate, Ajah, Lekki, Lagos');
-    setPropType('Duplex');
-    setPropStatus('Available');
-    setPropBeds(4);
-    setPropBaths(5);
-    setPropSqm(420);
-    setPropTitleDoc("Governor's Consent");
-    setPropCoOwn(true);
-    setPropSlotPrice(14500000);
-    setPropDesc('Verified mandate by Etosmania Global Properties Investment Limited.');
-    setPropImages([CURATED_PRESETS[0].url]);
+    setPropPrice('');
+    setPropLocation('Thomas Estate, Ajah, Lekki, Lagos');
+    setPropArea('Ajah');
+    setPropType('Residential');
+    setPropBeds('4');
+    setPropBaths('5');
+    setPropSqm('500');
+    setPropDesc('');
+    setPropImages([
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1400&q=80',
+    ]);
   };
 
-  const handleSaveProperty = (e: React.FormEvent) => {
+  // Development Submit
+  const handleSaveDevelopment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!propTitle.trim()) return;
-
-    const highlights = propHighlightsText
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const amenities = propAmenitiesText
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const finalImages = propImages.length > 0 ? propImages : [CURATED_PRESETS[0].url];
-
-    if (editingPropertyId) {
-      updateProperty(editingPropertyId, {
-        title: propTitle.trim(),
-        price: Number(propPrice),
-        location: propLocation,
-        address: propAddress,
-        bedrooms: Number(propBeds),
-        bathrooms: Number(propBaths),
-        sqm: Number(propSqm),
-        type: propType,
-        status: propStatus,
-        coOwnershipEligible: propCoOwn,
-        pricePerSlot: propCoOwn ? Number(propSlotPrice) : undefined,
-        titleDocument: propTitleDoc,
-        description: propDesc,
-        highlights,
-        amenities,
-        images: finalImages,
-      });
-      triggerToast(`Updated property "${propTitle.trim()}"`);
-      resetPropertyForm();
+    if (editingDevId) {
+      const existing = developments.find((d) => d.id === editingDevId);
+      if (existing) {
+        await updateDevelopment({
+          ...existing,
+          name: devName,
+          tagline: devTagline,
+          location: devLocation,
+          startingPrice: devStartingPrice,
+          completionDate: devCompletion,
+          status: devStatus,
+          totalUnits: Number(devTotalUnits) || 20,
+          availableUnits: Number(devAvailableUnits) || 5,
+          heroImage: devHeroImage,
+          description: devDesc,
+        });
+        showToast(`Updated development ${editingDevId}`);
+      }
     } else {
-      addProperty({
-        title: propTitle.trim(),
-        price: Number(propPrice),
-        location: propLocation,
-        address: propAddress,
-        bedrooms: Number(propBeds),
-        bathrooms: Number(propBaths),
-        sqm: Number(propSqm),
-        type: propType,
-        status: propStatus,
-        featured: true,
-        coOwnershipEligible: propCoOwn,
-        pricePerSlot: propCoOwn ? Number(propSlotPrice) : undefined,
-        titleDocument: propTitleDoc,
-        CompletionQuarter: 'Ready Now',
-        description: propDesc,
-        highlights,
-        amenities,
-        images: finalImages,
-        agent: {
-          name: 'Etosmania Advisory Desk',
-          role: 'Senior Mandate Officer',
-          phone: '+234 913 845 3949',
-          image:
-            'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80',
-        },
-        coordinates: { lat: 6.4698, lng: 3.5852 },
+      await addDevelopment({
+        name: devName,
+        tagline: devTagline || 'Sustainable Community-Centered Estate',
+        location: devLocation,
+        startingPrice: devStartingPrice,
+        completionDate: devCompletion,
+        status: devStatus,
+        totalUnits: Number(devTotalUnits) || 20,
+        availableUnits: Number(devAvailableUnits) || 5,
+        heroImage: devHeroImage,
+        gallery: [devHeroImage],
+        description: devDesc,
+        highlights: [
+          'Governor’s Consent / C of O Verified',
+          'Flexible 6–12 Months Milestone Payment Plan',
+          'Paved Roads, Solar Street Lighting & 24/7 Security',
+        ],
       });
-      triggerToast(`Created new property "${propTitle.trim()}"`);
-      resetPropertyForm();
+      showToast('Added new Estate Development!');
     }
+    setEditingDevId(null);
+    setDevName('');
+    setDevTagline('');
+    setDevDesc('');
   };
 
-  // ============================================================================
-  // 2. CO-OWNERSHIP CREATE / EDIT STATE
-  // ============================================================================
-  const [editingCoOwnId, setEditingCoOwnId] = useState<string | null>(null);
-  const [coTitle, setCoTitle] = useState('');
-  const [coLocation, setCoLocation] = useState<LocationArea>('Lekki Phase 1');
-  const [coAddress, setCoAddress] = useState('Thomas Estate Axis, Ajah–Lekki, Lagos');
-  const [coAssetType, setCoAssetType] =
-    useState<CoOwnershipProject['assetType']>('Residential Duplex Pool');
-  const [coTotalVal, setCoTotalVal] = useState(240000000);
-  const [coSlotPrice, setCoSlotPrice] = useState(12000000);
-  const [coTotalSlots, setCoTotalSlots] = useState(20);
-  const [coAvailableSlots, setCoAvailableSlots] = useState(8);
-  const [coYieldPct, setCoYieldPct] = useState(17.5);
-  const [coGrowthPct, setCoGrowthPct] = useState(24);
-  const [coHoldYears, setCoHoldYears] = useState(3);
-  const [coPayoutFreq, setCoPayoutFreq] =
-    useState<CoOwnershipProject['payoutFrequency']>('Bi-Annual');
-  const [coTitleDoc, setCoTitleDoc] = useState("Governor's Consent");
-  const [coLegal, setCoLegal] = useState('Registered SPV Deed of Co-Ownership & Trustee Certificate');
-  const [coSummary, setCoSummary] = useState('');
-  const [coHighlightsText, setCoHighlightsText] = useState(
-    'Fully managed tenant placement and maintenance\nAudited rental distributions direct to co-owners'
-  );
-  const [coImages, setCoImages] = useState<string[]>([CURATED_PRESETS[1].url]);
-
-  const startEditingCoOwn = (pool: CoOwnershipProject) => {
-    setEditingCoOwnId(pool.id);
-    setCoTitle(pool.title);
-    setCoLocation(pool.location);
-    setCoAddress(pool.address);
-    setCoAssetType(pool.assetType);
-    setCoTotalVal(pool.totalValuation);
-    setCoSlotPrice(pool.pricePerSlot);
-    setCoTotalSlots(pool.totalSlots);
-    setCoAvailableSlots(pool.availableSlots);
-    setCoYieldPct(pool.projectedAnnualYieldPct);
-    setCoGrowthPct(pool.projectedCapitalGrowthPct);
-    setCoHoldYears(pool.holdPeriodYears);
-    setCoPayoutFreq(pool.payoutFrequency);
-    setCoTitleDoc(pool.titleDocument);
-    setCoLegal(pool.legalStructure);
-    setCoSummary(pool.summary);
-    setCoHighlightsText((pool.highlights || []).join('\n'));
-    setCoImages([pool.image]);
-    window.scrollTo({ top: 160, behavior: 'smooth' });
-  };
-
-  const resetCoOwnForm = () => {
-    setEditingCoOwnId(null);
-    setCoTitle('');
-    setCoTotalVal(240000000);
-    setCoSlotPrice(12000000);
-    setCoTotalSlots(20);
-    setCoAvailableSlots(8);
-    setCoSummary('');
-    setCoImages([CURATED_PRESETS[1].url]);
-  };
-
-  const handleSaveCoOwn = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!coTitle.trim()) return;
-    const payload = {
-      title: coTitle.trim(),
-      location: coLocation,
-      address: coAddress,
-      assetType: coAssetType,
-      totalValuation: Number(coTotalVal),
-      pricePerSlot: Number(coSlotPrice),
-      totalSlots: Number(coTotalSlots),
-      availableSlots: Number(coAvailableSlots),
-      minSlots: 1,
-      projectedAnnualYieldPct: Number(coYieldPct),
-      projectedCapitalGrowthPct: Number(coGrowthPct),
-      holdPeriodYears: Number(coHoldYears),
-      payoutFrequency: coPayoutFreq,
-      titleDocument: coTitleDoc,
-      legalStructure: coLegal,
-      image: coImages[0] || CURATED_PRESETS[1].url,
-      summary:
-        coSummary ||
-        'Fractional co-ownership syndicate managed by Etosmania Global Properties.',
-      highlights: coHighlightsText
-        .split('\n')
-        .map((s) => s.trim())
-        .filter(Boolean),
-    };
-
-    if (editingCoOwnId) {
-      updateCoOwnershipProject(editingCoOwnId, payload);
-      triggerToast(`Updated Co-Ownership pool "${coTitle.trim()}"`);
-    } else {
-      addCoOwnershipProject(payload);
-      triggerToast(`Created Co-Ownership pool "${coTitle.trim()}"`);
-    }
-    resetCoOwnForm();
-  };
-
-  // ============================================================================
-  // 3. DEVELOPMENT CREATE / EDIT STATE
-  // ============================================================================
-  const [editingDevId, setEditingDevId] = useState<string | null>(null);
-  const [devName, setDevName] = useState('');
-  const [devTagline, setDevTagline] = useState('');
-  const [devLocation, setDevLocation] = useState<LocationArea>('Lekki Phase 1');
-  const [devStatus, setDevStatus] =
-    useState<DevelopmentProject['status']>('Under Construction');
-  const [devCompletion, setDevCompletion] = useState('Q4 2026');
-  const [devStartPrice, setDevStartPrice] = useState(95000000);
-  const [devTotalUnits, setDevTotalUnits] = useState(32);
-  const [devAvailUnits, setDevAvailUnits] = useState(12);
-  const [devYield, setDevYield] = useState('18.5% p.a.');
-  const [devOverview, setDevOverview] = useState('');
-  const [devConcept, setDevConcept] = useState(
-    'Contemporary tropical architecture with solar-hybrid microgrid.'
-  );
-  const [devFeaturesText, setDevFeaturesText] = useState(
-    '24/7 Access Control\nTreated Water Plant\nPaved Estate Boulevard\nCo-Ownership Eligible'
-  );
-  const [devImages, setDevImages] = useState<string[]>([CURATED_PRESETS[1].url]);
-
-  const startEditingDev = (d: DevelopmentProject) => {
+  const startEditDev = (d: DevelopmentProject) => {
     setEditingDevId(d.id);
     setDevName(d.name);
     setDevTagline(d.tagline);
     setDevLocation(d.location);
-    setDevStatus(d.status);
+    setDevStartingPrice(d.startingPrice);
     setDevCompletion(d.completionDate);
-    setDevStartPrice(d.startingPrice);
-    setDevTotalUnits(d.totalUnits);
-    setDevAvailUnits(d.availableUnits);
-    setDevYield(d.yieldEstimate);
-    setDevOverview(d.overview);
-    setDevConcept(d.architecturalConcept);
-    setDevFeaturesText((d.features || []).join('\n'));
-    setDevImages([d.heroImage, ...(d.gallery || [])]);
-    window.scrollTo({ top: 160, behavior: 'smooth' });
+    setDevStatus(d.status);
+    setDevTotalUnits(String(d.totalUnits));
+    setDevAvailableUnits(String(d.availableUnits));
+    setDevHeroImage(d.heroImage);
+    setDevDesc(d.description);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const resetDevForm = () => {
-    setEditingDevId(null);
-    setDevName('');
-    setDevTagline('');
-    setDevStartPrice(95000000);
-    setDevOverview('');
-    setDevImages([CURATED_PRESETS[1].url]);
-  };
-
-  const handleSaveDev = (e: React.FormEvent) => {
+  // Co-Ownership Submit
+  const handleSaveCoOwnership = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!devName.trim()) return;
-    const features = devFeaturesText
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const heroImage = devImages[0] || CURATED_PRESETS[1].url;
-
-    if (editingDevId) {
-      updateDevelopment(editingDevId, {
-        name: devName.trim(),
-        tagline: devTagline,
-        location: devLocation,
-        status: devStatus,
-        completionDate: devCompletion,
-        startingPrice: Number(devStartPrice),
-        totalUnits: Number(devTotalUnits),
-        availableUnits: Number(devAvailUnits),
-        yieldEstimate: devYield,
-        heroImage,
-        gallery: devImages,
-        overview: devOverview,
-        architecturalConcept: devConcept,
-        features,
-      });
-      triggerToast(`Updated development "${devName.trim()}"`);
+    if (editingCoId) {
+      const existing = coOwnershipAssets.find((c) => c.id === editingCoId);
+      if (existing) {
+        await updateCoOwnershipAsset({
+          ...existing,
+          title: coTitle,
+          location: coLocation,
+          totalValue: coTotalValue,
+          pricePerSlot: coPricePerSlot,
+          totalSlots: Number(coTotalSlots) || 20,
+          availableSlots: Number(coAvailableSlots) || 5,
+          projectedYield: coProjectedYield,
+          minimumHold: coMinimumHold,
+          image: coImage,
+        });
+        showToast(`Updated Co-Ownership Pool ${editingCoId}`);
+      }
     } else {
-      addDevelopment({
-        name: devName.trim(),
-        tagline: devTagline || 'Master-Planned Community by Etosmania Global Properties',
-        location: devLocation,
-        status: devStatus,
-        completionDate: devCompletion,
-        startingPrice: Number(devStartPrice),
-        totalUnits: Number(devTotalUnits),
-        availableUnits: Number(devAvailUnits),
-        yieldEstimate: devYield,
-        heroImage,
-        gallery: devImages,
-        overview:
-          devOverview ||
-          'Sustainable community-centered estate development by Etosmania Global Properties.',
-        architecturalConcept: devConcept,
-        features,
-        milestones: [
-          {
-            stage: 'Title Verification & Perimeter Fencing',
-            date: 'Completed',
-            completed: true,
-            description: 'Verified root of title and perimeter gatehouse completed.',
-          },
-          {
-            stage: 'Infrastructure & Superstructure',
-            date: devCompletion,
-            completed: false,
-            description: 'Ongoing civil and structural works.',
-          },
-        ],
-        floorPlans: [
-          {
-            id: `FP-${Date.now()}`,
-            name: 'Standard Unit / Plot Allocation',
-            bedrooms: 4,
-            sqm: 350,
-            priceFrom: formatNairaCompact(Number(devStartPrice)),
-            features: ['Verified Title', 'Flexible Payment Plan'],
-          },
+      await addCoOwnershipAsset({
+        title: coTitle,
+        location: coLocation,
+        totalValue: coTotalValue,
+        pricePerSlot: coPricePerSlot,
+        totalSlots: Number(coTotalSlots) || 20,
+        availableSlots: Number(coAvailableSlots) || 5,
+        projectedYield: coProjectedYield,
+        appreciationTarget: '+32% in 24 Months',
+        minimumHold: coMinimumHold,
+        status: 'Open for Subscription',
+        image: coImage,
+        highlights: [
+          'Registered Co-Ownership Deed & Slot Certificate',
+          'Audited Rental Dividend Payouts',
+          'Managed 100% by Etosmania Property Management',
         ],
       });
-      triggerToast(`Created development "${devName.trim()}"`);
+      showToast('Added new Co-Ownership Asset Pool!');
     }
-    resetDevForm();
+    setEditingCoId(null);
+    setCoTitle('');
   };
 
-  // ============================================================================
-  // 4. SERVICES CREATE / EDIT STATE
-  // ============================================================================
-  const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
-  const [svcTitle, setSvcTitle] = useState('');
-  const [svcCategory, setSvcCategory] =
-    useState<ServiceItem['category']>('Advisory & Consulting');
-  const [svcTagline, setSvcTagline] = useState('');
-  const [svcDesc, setSvcDesc] = useState('');
-  const [svcDeliverablesText, setSvcDeliverablesText] = useState('');
-  const [svcCtaText, setSvcCtaText] = useState('Book Consultation');
-  const [svcWhatsappMsg, setSvcWhatsappMsg] = useState('');
-
-  const startEditingService = (s: ServiceItem) => {
-    setEditingServiceId(s.id);
-    setSvcTitle(s.title);
-    setSvcCategory(s.category);
-    setSvcTagline(s.tagline);
-    setSvcDesc(s.description);
-    setSvcDeliverablesText((s.deliverables || []).join('\n'));
-    setSvcCtaText(s.ctaText);
-    setSvcWhatsappMsg(s.whatsappMessage || '');
-    window.scrollTo({ top: 160, behavior: 'smooth' });
+  const startEditCo = (c: CoOwnershipAsset) => {
+    setEditingCoId(c.id);
+    setCoTitle(c.title);
+    setCoLocation(c.location);
+    setCoTotalValue(c.totalValue);
+    setCoPricePerSlot(c.pricePerSlot);
+    setCoTotalSlots(String(c.totalSlots));
+    setCoAvailableSlots(String(c.availableSlots));
+    setCoProjectedYield(c.projectedYield);
+    setCoMinimumHold(c.minimumHold);
+    setCoImage(c.image);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const resetServiceForm = () => {
-    setEditingServiceId(null);
-    setSvcTitle('');
-    setSvcTagline('');
-    setSvcDesc('');
-    setSvcDeliverablesText('');
-    setSvcCtaText('Book Consultation');
-    setSvcWhatsappMsg('');
-  };
-
-  const handleSaveService = (e: React.FormEvent) => {
+  // Service Submit
+  const handleSaveService = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!svcTitle.trim()) return;
-    const deliverables = svcDeliverablesText
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean);
-
     if (editingServiceId) {
-      updateService(editingServiceId, {
-        title: svcTitle.trim(),
-        category: svcCategory,
-        tagline: svcTagline,
-        description: svcDesc,
-        deliverables,
-        ctaText: svcCtaText,
-        whatsappMessage: svcWhatsappMsg,
-      });
-      triggerToast(`Updated service pillar "${svcTitle.trim()}"`);
+      const existing = services.find((s) => s.id === editingServiceId);
+      if (existing) {
+        await updateService({
+          ...existing,
+          number: srvNumber,
+          title: srvTitle,
+          shortDesc: srvShortDesc,
+          description: srvDescription,
+          ctaText: srvCtaText,
+        });
+        showToast(`Updated Service Pillar: ${srvTitle}`);
+      }
     } else {
-      addService({
-        title: svcTitle.trim(),
-        category: svcCategory,
-        tagline: svcTagline,
-        description: svcDesc,
-        deliverables,
-        iconName: 'ShieldCheck',
-        ctaText: svcCtaText,
-        whatsappMessage: svcWhatsappMsg,
+      await addService({
+        number: srvNumber,
+        title: srvTitle,
+        shortDesc: srvShortDesc,
+        description: srvDescription,
+        iconName: 'Compass',
+        deliverables: [
+          'Verified Documentation & Advisory',
+          'Dedicated Relationship Officer',
+          'Milestone Reporting',
+        ],
+        ctaText: srvCtaText,
+        whatsappPrompt: `Hello Etosmania Global Properties, I would like to inquire about ${srvTitle}.`,
       });
-      triggerToast(`Added service pillar "${svcTitle.trim()}"`);
+      showToast(`Added Service Pillar: ${srvTitle}`);
     }
-    resetServiceForm();
+    setEditingServiceId(null);
+    setSrvTitle('');
+    setSrvShortDesc('');
+    setSrvDescription('');
   };
 
-  // ============================================================================
-  // 5. HERO & LANDING CONFIG CMS STATE
-  // ============================================================================
-  const [heroStyle, setHeroStyle] = useState<HeroStyleMode>(
-    landingConfig.heroStyle || 'full-bleed'
-  );
-  const [heroTagline, setHeroTagline] = useState(landingConfig.heroTagline);
-  const [heroHeadline, setHeroHeadline] = useState(landingConfig.heroHeadline);
-  const [heroSubheadline, setHeroSubheadline] = useState(landingConfig.heroSubheadline);
-  const [heroImages, setHeroImages] = useState<string[]>([landingConfig.heroImage]);
-  const [announcementBanner, setAnnouncementBanner] = useState(landingConfig.announcementBanner);
-  const [contactAddress, setContactAddress] = useState(landingConfig.contactAddress);
-  const [contactEmail, setContactEmail] = useState(landingConfig.contactEmail);
+  const startEditService = (s: ServiceItem) => {
+    setEditingServiceId(s.id);
+    setSrvNumber(s.number);
+    setSrvTitle(s.title);
+    setSrvShortDesc(s.shortDesc);
+    setSrvDescription(s.description);
+    setSrvCtaText(s.ctaText);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-  const handleSaveLanding = (e: React.FormEvent) => {
+  const handleSaveSiteConfig = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateLandingConfig({
-      heroStyle,
-      heroTagline,
-      heroHeadline,
-      heroSubheadline,
-      heroImage: heroImages[0] || landingConfig.heroImage,
-      announcementBanner,
-      contactAddress,
-      contactEmail,
-    });
-    triggerToast('Saved Hero Style & Global CMS Settings');
+    await updateSiteConfig(cmsConfig);
+    showToast('Saved Global Website & Hero Settings!');
   };
 
-  // Auth Gate Handlers
-  const handleUnlock = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (verifyAdminGatePassword(passwordInput)) {
-      setAdminSessionUnlocked(true);
-      setIsUnlocked(true);
-      setGateError('');
-    } else {
-      setGateError('Invalid passcode. Default passcode: ' + DEFAULT_ADMIN_GATE_SECRET);
-    }
-  };
-
-  const handleLogout = () => {
-    setAdminSessionUnlocked(false);
-    setIsUnlocked(false);
-    setPasswordInput('');
-  };
-
-  if (!isUnlocked) {
+  if (!isAuthenticated) {
     return (
-      <div className="min-h-screen pt-28 pb-20 bg-[#120721] text-white flex items-center justify-center px-4">
-        <div className="w-full max-w-md bg-[#1E0938] rounded-2xl p-8 border border-[#D4AF37]/40 shadow-2xl space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-[#3B0764] border border-[#D4AF37] flex items-center justify-center text-[#F59E0B]">
-              <Lock className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#F59E0B] block">
-                Etosmania Global Properties
-              </span>
-              <h1 className="font-serif text-2xl font-bold">Executive CMS Portal</h1>
-            </div>
+      <div className="min-h-[80vh] flex items-center justify-center p-4 bg-[#F8FAFC]">
+        <div className="bg-white rounded-3xl p-8 max-w-md w-full border border-slate-200 shadow-2xl space-y-6">
+          <div className="w-12 h-12 rounded-2xl bg-[#0A1D42] text-[#FACC15] flex items-center justify-center">
+            <Lock className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="font-serif-luxury text-2xl font-bold text-[#07142B]">
+              Etosmania Executive CMS Portal
+            </h1>
+            <p className="text-xs text-slate-500 mt-1">
+              Enter your executive passcode to manage properties, co-ownership pools, developments,
+              services, hero styles, and client inquiries.
+            </p>
           </div>
 
-          <form onSubmit={handleUnlock} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-mono uppercase text-purple-200 mb-1.5">
-                Enter Executive Passcode
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Executive Passcode
               </label>
               <input
                 type="password"
-                required
-                value={passwordInput}
-                onChange={(e) => setPasswordInput(e.target.value)}
-                placeholder="Enter passcode (e.g. Etosmania@2026)"
-                className="w-full px-4 py-3 rounded-lg bg-[#120721] border border-purple-700 text-sm text-white focus:outline-none focus:border-[#D4AF37]"
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value)}
+                placeholder="Enter passcode (ETOSMANIA2025)"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#0A1D42]"
               />
-              {gateError && <p className="text-xs text-amber-400 mt-2">{gateError}</p>}
+              {authError && <p className="text-xs text-red-600 mt-1.5 font-medium">{authError}</p>}
             </div>
 
             <button
               type="submit"
-              className="w-full py-3.5 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#F59E0B] text-[#120721] font-bold text-xs uppercase tracking-wider cursor-pointer"
+              className="w-full py-3.5 rounded-xl bg-[#0A1D42] hover:bg-[#07142B] text-[#FACC15] font-bold text-xs uppercase tracking-wider cursor-pointer"
             >
-              Unlock Full-Site CMS
+              Unlock CMS Dashboard
             </button>
           </form>
-
-          <p className="text-[11px] font-mono text-purple-300/70 text-center">
-            Passcode: <strong className="text-[#F59E0B]">{DEFAULT_ADMIN_GATE_SECRET}</strong>
-          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#FAF9FC] min-h-screen pt-24 pb-24">
-      {/* Toast Notification */}
-      {toastMsg && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[110] px-5 py-3 rounded-xl bg-[#18062C] text-[#F59E0B] border border-[#D4AF37] shadow-2xl text-xs font-mono font-bold flex items-center gap-2">
-          <Check className="w-4 h-4 text-emerald-400" />
-          <span>{toastMsg}</span>
-        </div>
-      )}
-
+    <div className="min-h-screen bg-[#F8FAFC] pb-24">
       {/* Header */}
-      <section className="bg-[#18062C] text-white py-10 border-b border-[#D4AF37]/30">
+      <div className="bg-[#07142B] text-white py-10 border-b-4 border-[#FACC15]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <span className="text-xs font-mono uppercase tracking-widest text-[#F59E0B] block">
+            <span className="text-xs font-mono-tech uppercase tracking-widest text-[#FACC15]">
               Full-Website Content Management System
             </span>
-            <h1 className="font-serif text-3xl font-bold mt-0.5">
-              Manage &amp; Edit Every Category of the Website
+            <h1 className="font-serif-luxury text-3xl font-bold mt-1">
+              Etosmania Global Properties CMS
             </h1>
           </div>
 
           <div className="flex items-center gap-3">
+            {statusBanner && (
+              <span className="px-3.5 py-2 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 text-xs font-bold flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4" />
+                {statusBanner}
+              </span>
+            )}
             <button
-              type="button"
-              onClick={() => {
-                resetToDefaults();
-                triggerToast('Restored default Etosmania catalog');
-              }}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-semibold text-purple-100 cursor-pointer"
+              onClick={resetDemoData}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold text-white cursor-pointer"
             >
-              <RotateCcw className="w-3.5 h-3.5 text-[#F59E0B]" />
-              <span>Reset Defaults</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-600/80 hover:bg-red-600 text-xs font-semibold text-white cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Lock CMS</span>
+              <RotateCcw className="w-3.5 h-3.5 text-[#FACC15]" />
+              <span>Reset Default Data</span>
             </button>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Category Navigation Tabs */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-        <div className="flex flex-wrap gap-2 mb-8 border-b border-purple-200 pb-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Navigation Tabs */}
+        <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-4">
           {[
-            { id: 'properties', label: `Properties (${properties.length})`, icon: Building2 },
             {
-              id: 'co-ownership',
-              label: `Co-Ownership Pools (${coOwnershipProjects.length})`,
+              id: 'properties',
+              label: `Properties (${properties.length})`,
+              icon: Building2,
+            },
+            {
+              id: 'coownership',
+              label: `Co-Ownership (${coOwnershipAssets.length})`,
               icon: Users,
             },
-            { id: 'developments', label: `Developments (${developments.length})`, icon: Layers },
-            { id: 'services', label: `Core Pillars (${services.length})`, icon: Briefcase },
-            { id: 'landing', label: 'Hero Style & Global CMS', icon: Settings },
-            { id: 'enquiries', label: `Enquiries (${enquiries.length})`, icon: Inbox },
-          ].map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setActiveTab(id as AdminTab)}
-              className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                activeTab === id
-                  ? 'bg-[#3B0764] text-[#F59E0B] shadow-sm'
-                  : 'bg-white text-slate-600 border border-purple-100 hover:border-purple-300'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span>{label}</span>
-            </button>
-          ))}
+            {
+              id: 'developments',
+              label: `Developments (${developments.length})`,
+              icon: Layers,
+            },
+            {
+              id: 'services',
+              label: `Services (${services.length})`,
+              icon: Briefcase,
+            },
+            {
+              id: 'cms',
+              label: 'Hero & Site Settings',
+              icon: Settings,
+            },
+            {
+              id: 'leads',
+              label: `Bookings & Leads (${bookings.length + inquiries.length})`,
+              icon: Calendar,
+            },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as AdminTab)}
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  active
+                    ? 'bg-[#0A1D42] text-[#FACC15] shadow-md'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-blue-50'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* =================================================================== */}
-        {/* TAB 1: PROPERTIES (CREATE + EDIT + UPLOAD/CAMERA/LINK)              */}
-        {/* =================================================================== */}
+        {/* =====================================================================
+            TAB 1: PROPERTIES MANAGER (ADD, EDIT, DELETE, UPLOAD, CAMERA, LINK)
+        ====================================================================== */}
         {activeTab === 'properties' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <form
               onSubmit={handleSaveProperty}
-              className="lg:col-span-5 bg-white rounded-2xl p-6 border border-purple-200 shadow-sm space-y-4"
+              className="lg:col-span-5 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4 h-fit"
             >
-              <div className="flex items-center justify-between border-b border-purple-100 pb-3">
-                <h2 className="font-serif text-xl font-bold text-[#120721] flex items-center gap-2">
+              <div className="flex items-center justify-between">
+                <h3 className="font-serif-luxury text-xl font-bold text-[#07142B] flex items-center gap-2">
                   {editingPropertyId ? (
                     <>
-                      <Edit3 className="w-5 h-5 text-[#D4AF37]" />
+                      <Edit3 className="w-5 h-5 text-[#EAB308]" />
                       <span>Edit Property ({editingPropertyId})</span>
                     </>
                   ) : (
                     <>
-                      <Plus className="w-5 h-5 text-[#4C1D95]" />
+                      <Plus className="w-5 h-5 text-[#0A1D42]" />
                       <span>Add New Property / Land</span>
                     </>
                   )}
-                </h2>
+                </h3>
                 {editingPropertyId && (
                   <button
                     type="button"
                     onClick={resetPropertyForm}
-                    className="text-xs font-semibold text-red-600 hover:underline cursor-pointer"
+                    className="text-xs font-bold text-slate-500 hover:text-red-600 flex items-center gap-1 cursor-pointer"
                   >
+                    <X className="w-3.5 h-3.5" />
                     Cancel Edit
                   </button>
                 )}
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Property Title *
                 </label>
                 <input
@@ -1078,247 +636,281 @@ export const AdminPage: React.FC = () => {
                   required
                   value={propTitle}
                   onChange={(e) => setPropTitle(e.target.value)}
-                  placeholder="e.g., 5-Bedroom Detached Duplex in Thomas Estate, Ajah"
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm"
+                  placeholder="e.g. 4-Bedroom Detached Duplex in Egbeda"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Price (NGN) *
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Price in NGN (₦) *
                   </label>
                   <input
                     type="number"
                     required
                     value={propPrice}
-                    onChange={(e) => setPropPrice(Number(e.target.value))}
-                    className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm"
+                    onChange={(e) => setPropPrice(e.target.value)}
+                    placeholder="115000000"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Category / Type
-                  </label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Category</label>
                   <select
                     value={propType}
                     onChange={(e) => setPropType(e.target.value as PropertyType)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-white"
                   >
-                    <option value="Duplex">Duplex</option>
-                    <option value="Terrace">Terrace</option>
-                    <option value="Villa">Villa</option>
-                    <option value="Penthouse">Penthouse</option>
-                    <option value="Apartment">Apartment</option>
-                    <option value="Land">Serviced Land</option>
-                    <option value="Commercial">Commercial Property</option>
+                    <option value="Residential">Residential</option>
+                    <option value="Land">Land</option>
+                    <option value="Co-Ownership">Co-Ownership</option>
+                    <option value="Commercial">Commercial</option>
+                    <option value="Investment">Investment</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Corridor
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Lagos Corridor
                   </label>
                   <select
-                    value={propLocation}
-                    onChange={(e) => setPropLocation(e.target.value as LocationArea)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white"
+                    value={propArea}
+                    onChange={(e) => setPropArea(e.target.value as LocationArea)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm bg-white"
                   >
-                    <option value="Lekki Phase 1">Ajah / Lekki Phase 1</option>
+                    <option value="Ajah">Ajah</option>
+                    <option value="Lekki">Lekki</option>
+                    <option value="Egbeda">Egbeda</option>
+                    <option value="Akowonjo">Akowonjo</option>
+                    <option value="Agbara">Agbara</option>
                     <option value="Ibeju-Lekki">Ibeju-Lekki</option>
+                    <option value="Epe">Epe</option>
                     <option value="Victoria Island">Victoria Island</option>
                     <option value="Ikoyi">Ikoyi</option>
-                    <option value="Eko Atlantic">Eko Atlantic</option>
                     <option value="Ikeja GRA">Ikeja GRA</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Availability Status
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Size (SQM)
                   </label>
-                  <select
-                    value={propStatus}
-                    onChange={(e) => setPropStatus(e.target.value as PropertyStatus)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white"
-                  >
-                    <option value="Available">Available</option>
-                    <option value="Off-Plan">Off-Plan</option>
-                    <option value="Sold">Sold</option>
-                  </select>
+                  <input
+                    type="number"
+                    value={propSqm}
+                    onChange={(e) => setPropSqm(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Street / Estate Address
-                  </label>
-                  <input
-                    type="text"
-                    value={propAddress}
-                    onChange={(e) => setPropAddress(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Title Document
-                  </label>
-                  <input
-                    type="text"
-                    value={propTitleDoc}
-                    onChange={(e) => setPropTitleDoc(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Beds</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Bedrooms</label>
                   <input
                     type="number"
                     value={propBeds}
-                    onChange={(e) => setPropBeds(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"
+                    onChange={(e) => setPropBeds(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Baths</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Bathrooms</label>
                   <input
                     type="number"
                     value={propBaths}
-                    onChange={(e) => setPropBaths(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">SQM</label>
-                  <input
-                    type="number"
-                    value={propSqm}
-                    onChange={(e) => setPropSqm(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"
+                    onChange={(e) => setPropBaths(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-3 rounded-lg bg-purple-50 border border-purple-100">
-                <label className="text-xs font-semibold text-[#2E1065] flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={propCoOwn}
-                    onChange={(e) => setPropCoOwn(e.target.checked)}
-                  />
-                  <span>Co-Ownership Eligible</span>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Full Address / Axis *
                 </label>
-                {propCoOwn && (
+                <input
+                  type="text"
+                  required
+                  value={propLocation}
+                  onChange={(e) => setPropLocation(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
+                />
+              </div>
+
+              {/* Multi-Source Photo Manager: File Upload, Camera Capture, or Image URL */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <label className="block text-xs font-bold text-[#07142B]">
+                  Property Photos (Upload File, Take Camera Photo, or Paste Link)
+                </label>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {/* Hidden File Upload Input */}
                   <input
-                    type="number"
-                    value={propSlotPrice}
-                    onChange={(e) => setPropSlotPrice(Number(e.target.value))}
-                    className="w-36 px-2.5 py-1 rounded border border-purple-200 text-xs font-mono bg-white"
-                    placeholder="Price per Slot"
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) =>
+                      handleFileOrCameraUpload(e, (url) =>
+                        setPropImages((prev) => [url, ...prev])
+                      )
+                    }
                   />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingImage}
+                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-white border border-slate-200 hover:border-[#0A1D42] text-xs font-bold text-[#07142B] cursor-pointer"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-[#0A1D42]" />
+                    <span>{isUploadingImage ? 'Optimizing...' : 'Upload Photo'}</span>
+                  </button>
+
+                  {/* Hidden Camera Capture Input */}
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) =>
+                      handleFileOrCameraUpload(e, (url) =>
+                        setPropImages((prev) => [url, ...prev])
+                      )
+                    }
+                  />
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    disabled={isUploadingImage}
+                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-white border border-slate-200 hover:border-[#0A1D42] text-xs font-bold text-[#07142B] cursor-pointer"
+                  >
+                    <Camera className="w-3.5 h-3.5 text-[#EAB308]" />
+                    <span>Take Camera Photo</span>
+                  </button>
+                </div>
+
+                {/* Add Image Link */}
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <LinkIcon className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={newImageUrl}
+                      onChange={(e) => setNewImageUrl(e.target.value)}
+                      placeholder="Or paste image URL (https://...)"
+                      className="w-full pl-8 pr-3 py-2 rounded-xl bg-white border border-slate-200 text-xs"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddImageUrl}
+                    className="px-3 py-2 rounded-xl bg-[#0A1D42] text-[#FACC15] text-xs font-bold cursor-pointer"
+                  >
+                    Add Link
+                  </button>
+                </div>
+
+                {/* Thumbnails Preview */}
+                {propImages.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    {propImages.map((img, idx) => (
+                      <div
+                        key={idx}
+                        className="relative group aspect-[4/3] rounded-lg overflow-hidden border border-slate-200 bg-white"
+                      >
+                        <SafeImage
+                          src={img}
+                          alt={`Preview ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPropImages((prev) => prev.filter((_, i) => i !== idx))
+                          }
+                          className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center opacity-90 hover:opacity-100"
+                          title="Remove photo"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                        {idx === 0 && (
+                          <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-[#07142B]/85 text-[#FACC15] text-[9px] font-bold">
+                            Cover
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Executive Description
-                </label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Description</label>
                 <textarea
                   rows={3}
                   value={propDesc}
                   onChange={(e) => setPropDesc(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-xs"
+                  placeholder="Highlight title documents, infrastructure, and investment potential..."
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm"
                 />
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Key Highlights (One per line)
-                </label>
-                <textarea
-                  rows={3}
-                  value={propHighlightsText}
-                  onChange={(e) => setPropHighlightsText(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-xs"
-                />
-              </div>
-
-              <MediaUploadManager
-                images={propImages}
-                onChange={setPropImages}
-                multiple={true}
-                label="Property Gallery (Upload, Camera, or Link)"
-              />
 
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-lg bg-[#3B0764] hover:bg-[#4C1D95] text-white font-bold text-xs uppercase tracking-wider cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-xl bg-[#0A1D42] hover:bg-[#07142B] text-[#FACC15] font-bold text-xs uppercase tracking-wider cursor-pointer flex items-center justify-center gap-2"
               >
-                <Save className="w-4 h-4 text-[#F59E0B]" />
+                <Save className="w-4 h-4" />
                 <span>
-                  {editingPropertyId ? 'Save Changes to Property' : 'Publish New Property'}
+                  {editingPropertyId ? 'Save Property Changes' : 'Publish Property Listing'}
                 </span>
               </button>
             </form>
 
-            {/* Right: Properties List with Edit & Delete */}
+            {/* Existing Properties List with Edit & Delete */}
             <div className="lg:col-span-7 space-y-3">
               {properties.map((p) => (
                 <div
                   key={p.id}
-                  className={`bg-white rounded-xl p-4 border transition-all flex items-center justify-between gap-4 ${
-                    editingPropertyId === p.id
-                      ? 'border-[#D4AF37] ring-2 ring-[#D4AF37]/30'
-                      : 'border-purple-100'
-                  }`}
+                  className="bg-white rounded-2xl p-4 border border-slate-200 flex items-center justify-between gap-4"
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <SafeImage
-                      src={p.images[0]}
-                      alt={p.title}
-                      className="w-16 h-16 rounded-lg object-cover shrink-0"
-                    />
+                    <div className="w-16 h-14 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200">
+                      <SafeImage
+                        src={p.images[0]}
+                        alt={p.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                     <div className="min-w-0">
-                      <span className="text-[10px] font-mono uppercase text-[#5B21B6] block">
-                        {p.id} · {p.location} · {p.type} · {p.status}
-                      </span>
-                      <Link
-                        to={`/properties/${p.slug}`}
-                        className="font-serif font-bold text-sm text-[#120721] hover:text-[#3B0764] truncate block"
-                      >
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono-tech text-[10px] font-bold px-2 py-0.5 rounded bg-[#FACC15] text-[#07142B]">
+                          {p.id}
+                        </span>
+                        <span className="text-xs font-semibold text-[#0A1D42]">{p.type}</span>
+                        <span className="text-xs font-bold text-slate-500">• {p.area}</span>
+                      </div>
+                      <h4 className="font-bold text-sm text-[#07142B] truncate mt-1">
                         {p.title}
-                      </Link>
-                      <span className="font-mono text-xs font-bold text-[#3B0764]">
-                        {formatNairaCompact(p.price)}
-                        {p.coOwnershipEligible && p.pricePerSlot
-                          ? ` · Slot: ${formatNairaCompact(p.pricePerSlot)}`
-                          : ''}
-                      </span>
+                      </h4>
+                      <p className="text-xs text-slate-500 font-mono-tech">{p.priceFormatted}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
-                      type="button"
-                      onClick={() => startEditingProperty(p)}
-                      className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-purple-50 hover:bg-[#3B0764] text-[#3B0764] hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+                      onClick={() => startEditProperty(p)}
+                      className="px-3 py-2 rounded-xl text-xs font-bold text-[#0A1D42] bg-blue-50 hover:bg-blue-100 flex items-center gap-1 cursor-pointer"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>Edit</span>
                     </button>
                     <button
-                      type="button"
-                      onClick={() => {
-                        deleteProperty(p.id);
-                        triggerToast(`Deleted ${p.title}`);
-                      }}
-                      className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
-                      title="Delete Property"
+                      onClick={() => deleteProperty(p.id)}
+                      className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                      aria-label="Delete property"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -1329,218 +921,198 @@ export const AdminPage: React.FC = () => {
           </div>
         )}
 
-        {/* =================================================================== */}
-        {/* TAB 2: CO-OWNERSHIP SYNDICATES (CREATE + EDIT + UPLOAD/CAMERA/LINK) */}
-        {/* =================================================================== */}
-        {activeTab === 'co-ownership' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* =====================================================================
+            TAB 2: CO-OWNERSHIP SYNDICATES MANAGER
+        ====================================================================== */}
+        {activeTab === 'coownership' && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <form
-              onSubmit={handleSaveCoOwn}
-              className="lg:col-span-5 bg-white rounded-2xl p-6 border border-purple-200 shadow-sm space-y-4"
+              onSubmit={handleSaveCoOwnership}
+              className="lg:col-span-5 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4 h-fit"
             >
-              <div className="flex items-center justify-between border-b border-purple-100 pb-3">
-                <h2 className="font-serif text-xl font-bold text-[#120721] flex items-center gap-2">
-                  {editingCoOwnId ? (
-                    <>
-                      <Edit3 className="w-5 h-5 text-[#D4AF37]" />
-                      <span>Edit Syndicate ({editingCoOwnId})</span>
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-5 h-5 text-[#4C1D95]" />
-                      <span>Add Co-Ownership Pool</span>
-                    </>
-                  )}
-                </h2>
-                {editingCoOwnId && (
+              <div className="flex items-center justify-between">
+                <h3 className="font-serif-luxury text-xl font-bold text-[#07142B]">
+                  {editingCoId ? `Edit Pool (${editingCoId})` : 'Add Co-Ownership Pool'}
+                </h3>
+                {editingCoId && (
                   <button
                     type="button"
-                    onClick={resetCoOwnForm}
-                    className="text-xs font-semibold text-red-600 hover:underline cursor-pointer"
+                    onClick={() => {
+                      setEditingCoId(null);
+                      setCoTitle('');
+                    }}
+                    className="text-xs font-bold text-slate-500 hover:text-red-600"
                   >
-                    Cancel Edit
+                    Cancel
                   </button>
                 )}
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Pool / Syndicate Title *
-                </label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Pool Title *</label>
                 <input
                   type="text"
                   required
                   value={coTitle}
                   onChange={(e) => setCoTitle(e.target.value)}
-                  placeholder="e.g., Thomas Estate Sovereign Duplex Pool"
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm"
+                  placeholder="e.g. Akowonjo–Egbeda Executive Rental Pool"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Location *</label>
+                <input
+                  type="text"
+                  required
+                  value={coLocation}
+                  onChange={(e) => setCoLocation(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Price Per Slot (NGN) *
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Price Per Slot *
                   </label>
                   <input
-                    type="number"
+                    type="text"
                     required
-                    value={coSlotPrice}
-                    onChange={(e) => setCoSlotPrice(Number(e.target.value))}
-                    className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm"
+                    value={coPricePerSlot}
+                    onChange={(e) => setCoPricePerSlot(e.target.value)}
+                    placeholder="₦9,000,000"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Total Valuation (NGN)
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Total Asset Value *
                   </label>
                   <input
-                    type="number"
-                    value={coTotalVal}
-                    onChange={(e) => setCoTotalVal(Number(e.target.value))}
-                    className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm"
+                    type="text"
+                    required
+                    value={coTotalValue}
+                    onChange={(e) => setCoTotalValue(e.target.value)}
+                    placeholder="₦180,000,000"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Total Slots
                   </label>
                   <input
                     type="number"
                     value={coTotalSlots}
-                    onChange={(e) => setCoTotalSlots(Number(e.target.value))}
-                    className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm"
+                    onChange={(e) => setCoTotalSlots(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Available Slots
                   </label>
                   <input
                     type="number"
                     value={coAvailableSlots}
-                    onChange={(e) => setCoAvailableSlots(Number(e.target.value))}
-                    className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm"
+                    onChange={(e) => setCoAvailableSlots(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Annual Yield %
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Projected Yield
                   </label>
                   <input
-                    type="number"
-                    step="0.1"
-                    value={coYieldPct}
-                    onChange={(e) => setCoYieldPct(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"
+                    type="text"
+                    value={coProjectedYield}
+                    onChange={(e) => setCoProjectedYield(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Growth % p.a.
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Minimum Hold
                   </label>
                   <input
-                    type="number"
-                    step="0.1"
-                    value={coGrowthPct}
-                    onChange={(e) => setCoGrowthPct(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Hold (Yrs)
-                  </label>
-                  <input
-                    type="number"
-                    value={coHoldYears}
-                    onChange={(e) => setCoHoldYears(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"
+                    type="text"
+                    value={coMinimumHold}
+                    onChange={(e) => setCoMinimumHold(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Summary Description
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Photo URL or Upload
                 </label>
-                <textarea
-                  rows={2}
-                  value={coSummary}
-                  onChange={(e) => setCoSummary(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-xs"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={coImage}
+                    onChange={(e) => setCoImage(e.target.value)}
+                    className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 text-xs"
+                  />
+                  <label className="px-3 py-2 rounded-xl bg-blue-50 text-[#0A1D42] text-xs font-bold cursor-pointer flex items-center gap-1">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleFileOrCameraUpload(e, (url) => setCoImage(url))}
+                    />
+                  </label>
+                </div>
               </div>
-
-              <MediaUploadManager
-                images={coImages}
-                onChange={setCoImages}
-                multiple={false}
-                label="Pool Cover Photo (Upload, Camera, or Link)"
-              />
 
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-lg bg-[#3B0764] hover:bg-[#4C1D95] text-white font-bold text-xs uppercase tracking-wider cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-xl bg-[#0A1D42] hover:bg-[#07142B] text-[#FACC15] font-bold text-xs uppercase tracking-wider cursor-pointer"
               >
-                <Save className="w-4 h-4 text-[#F59E0B]" />
-                <span>
-                  {editingCoOwnId ? 'Save Co-Ownership Changes' : 'Publish Co-Ownership Pool'}
-                </span>
+                {editingCoId ? 'Save Co-Ownership Changes' : 'Publish Co-Ownership Pool'}
               </button>
             </form>
 
             <div className="lg:col-span-7 space-y-3">
-              {coOwnershipProjects.map((pool) => (
+              {coOwnershipAssets.map((c) => (
                 <div
-                  key={pool.id}
-                  className={`bg-white rounded-xl p-4 border flex items-center justify-between gap-4 ${
-                    editingCoOwnId === pool.id
-                      ? 'border-[#D4AF37] ring-2 ring-[#D4AF37]/30'
-                      : 'border-purple-100'
-                  }`}
+                  key={c.id}
+                  className="bg-white rounded-2xl p-4 border border-slate-200 flex items-center justify-between gap-4"
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <SafeImage
-                      src={pool.image}
-                      alt={pool.title}
-                      className="w-16 h-16 rounded-lg object-cover shrink-0"
-                    />
+                    <div className="w-16 h-14 rounded-xl overflow-hidden bg-slate-100 shrink-0">
+                      <SafeImage src={c.image} alt={c.title} className="w-full h-full object-cover" />
+                    </div>
                     <div className="min-w-0">
-                      <span className="text-[10px] font-mono uppercase text-[#5B21B6] block">
-                        {pool.id} · {pool.assetType}
+                      <span className="font-mono-tech text-[10px] font-bold px-2 py-0.5 rounded bg-[#FACC15] text-[#07142B]">
+                        {c.id}
                       </span>
-                      <h3 className="font-serif font-bold text-sm text-[#120721] truncate">
-                        {pool.title}
-                      </h3>
-                      <span className="font-mono text-xs font-bold text-[#3B0764]">
-                        {formatNairaCompact(pool.pricePerSlot)} / slot · {pool.availableSlots}/
-                        {pool.totalSlots} open
-                      </span>
+                      <h4 className="font-bold text-sm text-[#07142B] truncate mt-1">{c.title}</h4>
+                      <p className="text-xs text-slate-500">
+                        {c.pricePerSlot} / Slot • {c.availableSlots} of {c.totalSlots} Open
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-1.5">
                     <button
-                      type="button"
-                      onClick={() => startEditingCoOwn(pool)}
-                      className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-purple-50 hover:bg-[#3B0764] text-[#3B0764] hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+                      onClick={() => startEditCo(c)}
+                      className="px-3 py-2 rounded-xl text-xs font-bold text-[#0A1D42] bg-blue-50 hover:bg-blue-100 flex items-center gap-1 cursor-pointer"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>Edit</span>
                     </button>
                     <button
-                      type="button"
-                      onClick={() => {
-                        deleteCoOwnershipProject(pool.id);
-                        triggerToast(`Removed ${pool.title}`);
-                      }}
-                      className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                      onClick={() => deleteCoOwnershipAsset(c.id)}
+                      className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -1551,206 +1123,191 @@ export const AdminPage: React.FC = () => {
           </div>
         )}
 
-        {/* =================================================================== */}
-        {/* TAB 3: DEVELOPMENTS (CREATE + EDIT + UPLOAD/CAMERA/LINK)            */}
-        {/* =================================================================== */}
+        {/* =====================================================================
+            TAB 3: ESTATE DEVELOPMENTS MANAGER
+        ====================================================================== */}
         {activeTab === 'developments' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <form
-              onSubmit={handleSaveDev}
-              className="lg:col-span-5 bg-white rounded-2xl p-6 border border-purple-200 shadow-sm space-y-4"
+              onSubmit={handleSaveDevelopment}
+              className="lg:col-span-5 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4 h-fit"
             >
-              <div className="flex items-center justify-between border-b border-purple-100 pb-3">
-                <h2 className="font-serif text-xl font-bold text-[#120721] flex items-center gap-2">
-                  {editingDevId ? (
-                    <>
-                      <Edit3 className="w-5 h-5 text-[#D4AF37]" />
-                      <span>Edit Development ({editingDevId})</span>
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-5 h-5 text-[#4C1D95]" />
-                      <span>Add Estate Development</span>
-                    </>
-                  )}
-                </h2>
+              <div className="flex items-center justify-between">
+                <h3 className="font-serif-luxury text-xl font-bold text-[#07142B]">
+                  {editingDevId ? `Edit Estate (${editingDevId})` : 'Add Estate Development'}
+                </h3>
                 {editingDevId && (
                   <button
                     type="button"
-                    onClick={resetDevForm}
-                    className="text-xs font-semibold text-red-600 hover:underline cursor-pointer"
+                    onClick={() => {
+                      setEditingDevId(null);
+                      setDevName('');
+                    }}
+                    className="text-xs font-bold text-slate-500 hover:text-red-600"
                   >
-                    Cancel Edit
+                    Cancel
                   </button>
                 )}
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Development Name *
-                </label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Estate Name *</label>
                 <input
                   type="text"
                   required
                   value={devName}
                   onChange={(e) => setDevName(e.target.value)}
-                  placeholder="e.g., Etosmania Gold Crest Courts, Ajah"
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm"
+                  placeholder="e.g. Etosmania Gold Crest Courts"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Tagline</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Tagline *</label>
                 <input
                   type="text"
+                  required
                   value={devTagline}
                   onChange={(e) => setDevTagline(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Starting Price (NGN)
-                  </label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Location *</label>
                   <input
-                    type="number"
-                    value={devStartPrice}
-                    onChange={(e) => setDevStartPrice(Number(e.target.value))}
-                    className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm"
+                    type="text"
+                    required
+                    value={devLocation}
+                    onChange={(e) => setDevLocation(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Status
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Starting Price *
                   </label>
-                  <select
-                    value={devStatus}
-                    onChange={(e) =>
-                      setDevStatus(e.target.value as DevelopmentProject['status'])
-                    }
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white"
-                  >
-                    <option value="Pre-Launch">Pre-Launch</option>
-                    <option value="Under Construction">Under Construction</option>
-                    <option value="Ready to Move">Ready to Move</option>
-                    <option value="Sold Out">Sold Out</option>
-                  </select>
+                  <input
+                    type="text"
+                    required
+                    value={devStartingPrice}
+                    onChange={(e) => setDevStartingPrice(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
+                  />
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Delivery Date
-                  </label>
-                  <input
-                    type="text"
-                    value={devCompletion}
-                    onChange={(e) => setDevCompletion(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
-                  />
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Status</label>
+                  <select
+                    value={devStatus}
+                    onChange={(e) =>
+                      setDevStatus(e.target.value as 'Ongoing' | 'Completed' | 'Upcoming')
+                    }
+                    className="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs bg-white"
+                  >
+                    <option value="Ongoing">Ongoing</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Upcoming">Upcoming</option>
+                  </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Avail Units
-                  </label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Total Units</label>
                   <input
                     type="number"
-                    value={devAvailUnits}
-                    onChange={(e) => setDevAvailUnits(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
+                    value={devTotalUnits}
+                    onChange={(e) => setDevTotalUnits(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Yield Est.
-                  </label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Units Left</label>
                   <input
-                    type="text"
-                    value={devYield}
-                    onChange={(e) => setDevYield(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
+                    type="number"
+                    value={devAvailableUnits}
+                    onChange={(e) => setDevAvailableUnits(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Masterplan Overview
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Hero Image (URL or Upload)
                 </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={devHeroImage}
+                    onChange={(e) => setDevHeroImage(e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                  />
+                  <label className="px-3 py-2 rounded-xl bg-blue-50 text-[#0A1D42] text-xs font-bold cursor-pointer flex items-center gap-1">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleFileOrCameraUpload(e, (url) => setDevHeroImage(url))}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Description</label>
                 <textarea
                   rows={3}
-                  value={devOverview}
-                  onChange={(e) => setDevOverview(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-xs"
+                  value={devDesc}
+                  onChange={(e) => setDevDesc(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm"
                 />
               </div>
 
-              <MediaUploadManager
-                images={devImages}
-                onChange={setDevImages}
-                multiple={true}
-                label="Development Photos (Upload, Camera, or Link)"
-              />
-
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-lg bg-[#3B0764] hover:bg-[#4C1D95] text-white font-bold text-xs uppercase tracking-wider cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-xl bg-[#0A1D42] hover:bg-[#07142B] text-[#FACC15] font-bold text-xs uppercase tracking-wider cursor-pointer"
               >
-                <Save className="w-4 h-4 text-[#F59E0B]" />
-                <span>
-                  {editingDevId ? 'Save Development Changes' : 'Publish New Development'}
-                </span>
+                {editingDevId ? 'Save Development Changes' : 'Publish Development'}
               </button>
             </form>
 
             <div className="lg:col-span-7 space-y-3">
-              {developments.map((dev) => (
+              {developments.map((d) => (
                 <div
-                  key={dev.id}
-                  className={`bg-white rounded-xl p-4 border flex items-center justify-between gap-4 ${
-                    editingDevId === dev.id
-                      ? 'border-[#D4AF37] ring-2 ring-[#D4AF37]/30'
-                      : 'border-purple-100'
-                  }`}
+                  key={d.id}
+                  className="bg-white rounded-2xl p-4 border border-slate-200 flex items-center justify-between gap-4"
                 >
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <SafeImage
-                      src={dev.heroImage}
-                      alt={dev.name}
-                      className="w-16 h-16 rounded-lg object-cover shrink-0"
-                    />
+                    <div className="w-16 h-14 rounded-xl overflow-hidden bg-slate-100 shrink-0">
+                      <SafeImage
+                        src={d.heroImage}
+                        alt={d.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                     <div className="min-w-0">
-                      <span className="text-[10px] font-mono uppercase text-[#5B21B6] block">
-                        {dev.id} · {dev.location} · {dev.status}
+                      <span className="font-mono-tech text-[10px] font-bold px-2 py-0.5 rounded bg-[#FACC15] text-[#07142B]">
+                        {d.id} • {d.status}
                       </span>
-                      <h3 className="font-serif font-bold text-sm text-[#120721] truncate">
-                        {dev.name}
-                      </h3>
-                      <span className="font-mono text-xs font-bold text-[#3B0764]">
-                        From {formatNairaCompact(dev.startingPrice)} · {dev.availableUnits}/
-                        {dev.totalUnits} avail
-                      </span>
+                      <h4 className="font-bold text-sm text-[#07142B] truncate mt-1">{d.name}</h4>
+                      <p className="text-xs text-slate-500">{d.startingPrice}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-1.5">
                     <button
-                      type="button"
-                      onClick={() => startEditingDev(dev)}
-                      className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-purple-50 hover:bg-[#3B0764] text-[#3B0764] hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+                      onClick={() => startEditDev(d)}
+                      className="px-3 py-2 rounded-xl text-xs font-bold text-[#0A1D42] bg-blue-50 hover:bg-blue-100 flex items-center gap-1 cursor-pointer"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>Edit</span>
                     </button>
                     <button
-                      type="button"
-                      onClick={() => {
-                        deleteDevelopment(dev.id);
-                        triggerToast(`Deleted ${dev.name}`);
-                      }}
-                      className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                      onClick={() => deleteDevelopment(d.id)}
+                      className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -1761,145 +1318,127 @@ export const AdminPage: React.FC = () => {
           </div>
         )}
 
-        {/* =================================================================== */}
-        {/* TAB 4: 8 CORE SERVICES (CREATE + EDIT + DELETE)                     */}
-        {/* =================================================================== */}
+        {/* =====================================================================
+            TAB 4: SERVICES PILLARS MANAGER
+        ====================================================================== */}
         {activeTab === 'services' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <form
               onSubmit={handleSaveService}
-              className="lg:col-span-5 bg-white rounded-2xl p-6 border border-purple-200 shadow-sm space-y-4"
+              className="lg:col-span-5 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4 h-fit"
             >
-              <div className="flex items-center justify-between border-b border-purple-100 pb-3">
-                <h2 className="font-serif text-xl font-bold text-[#120721] flex items-center gap-2">
-                  {editingServiceId ? (
-                    <>
-                      <Edit3 className="w-5 h-5 text-[#D4AF37]" />
-                      <span>Edit Service Pillar</span>
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-5 h-5 text-[#4C1D95]" />
-                      <span>Add Service Pillar</span>
-                    </>
-                  )}
-                </h2>
+              <div className="flex items-center justify-between">
+                <h3 className="font-serif-luxury text-xl font-bold text-[#07142B]">
+                  {editingServiceId ? 'Edit Service Pillar' : 'Add Service Pillar'}
+                </h3>
                 {editingServiceId && (
                   <button
                     type="button"
-                    onClick={resetServiceForm}
-                    className="text-xs font-semibold text-red-600 hover:underline cursor-pointer"
+                    onClick={() => {
+                      setEditingServiceId(null);
+                      setSrvTitle('');
+                    }}
+                    className="text-xs font-bold text-slate-500 hover:text-red-600"
                   >
-                    Cancel Edit
+                    Cancel
                   </button>
                 )}
               </div>
 
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Number</label>
+                  <input
+                    type="text"
+                    value={srvNumber}
+                    onChange={(e) => setSrvNumber(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Service Title *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={srvTitle}
+                    onChange={(e) => setSrvTitle(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Service Pillar Title *
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Short Summary *
                 </label>
                 <input
                   type="text"
                   required
-                  value={svcTitle}
-                  onChange={(e) => setSvcTitle(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm"
+                  value={srvShortDesc}
+                  onChange={(e) => setSrvShortDesc(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Category</label>
-                <select
-                  value={svcCategory}
-                  onChange={(e) =>
-                    setSvcCategory(e.target.value as ServiceItem['category'])
-                  }
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white"
-                >
-                  <option value="Advisory & Consulting">Advisory &amp; Consulting</option>
-                  <option value="Sales & Acquisition">Sales &amp; Acquisition</option>
-                  <option value="Wealth & Co-Ownership">Wealth &amp; Co-Ownership</option>
-                  <option value="Asset Management">Asset Management</option>
-                </select>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Full Description *
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  value={srvDescription}
+                  onChange={(e) => setSrvDescription(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm"
+                />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Tagline</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  CTA Button Label
+                </label>
                 <input
                   type="text"
-                  value={svcTagline}
-                  onChange={(e) => setSvcTagline(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Detailed Description
-                </label>
-                <textarea
-                  rows={3}
-                  value={svcDesc}
-                  onChange={(e) => setSvcDesc(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Deliverables (One per line)
-                </label>
-                <textarea
-                  rows={3}
-                  value={svcDeliverablesText}
-                  onChange={(e) => setSvcDeliverablesText(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-xs"
+                  value={srvCtaText}
+                  onChange={(e) => setSrvCtaText(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-lg bg-[#3B0764] hover:bg-[#4C1D95] text-white font-bold text-xs uppercase tracking-wider cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-xl bg-[#0A1D42] hover:bg-[#07142B] text-[#FACC15] font-bold text-xs uppercase tracking-wider cursor-pointer"
               >
-                <Save className="w-4 h-4 text-[#F59E0B]" />
-                <span>{editingServiceId ? 'Save Pillar Changes' : 'Add Service Pillar'}</span>
+                {editingServiceId ? 'Update Service Pillar' : 'Add Service Pillar'}
               </button>
             </form>
 
             <div className="lg:col-span-7 space-y-3">
-              {services.map((svc, idx) => (
+              {services.map((s) => (
                 <div
-                  key={svc.id}
-                  className={`bg-white rounded-xl p-4 border flex items-center justify-between gap-4 ${
-                    editingServiceId === svc.id
-                      ? 'border-[#D4AF37] ring-2 ring-[#D4AF37]/30'
-                      : 'border-purple-100'
-                  }`}
+                  key={s.id}
+                  className="bg-white rounded-2xl p-4 border border-slate-200 flex items-center justify-between gap-4"
                 >
-                  <div className="min-w-0">
-                    <span className="text-[10px] font-mono uppercase text-[#5B21B6] block">
-                      Pillar 0{idx + 1} · {svc.category}
+                  <div>
+                    <span className="font-mono-tech text-[10px] font-bold px-2 py-0.5 rounded bg-[#FACC15] text-[#07142B]">
+                      Pillar {s.number}
                     </span>
-                    <h3 className="font-serif font-bold text-base text-[#120721]">{svc.title}</h3>
-                    <p className="text-xs text-slate-500 truncate">{svc.tagline}</p>
+                    <h4 className="font-bold text-sm text-[#07142B] mt-1">{s.title}</h4>
+                    <p className="text-xs text-slate-500 line-clamp-1">{s.shortDesc}</p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
-                      type="button"
-                      onClick={() => startEditingService(svc)}
-                      className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-purple-50 hover:bg-[#3B0764] text-[#3B0764] hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+                      onClick={() => startEditService(s)}
+                      className="px-3 py-2 rounded-xl text-xs font-bold text-[#0A1D42] bg-blue-50 hover:bg-blue-100 flex items-center gap-1 cursor-pointer"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>Edit</span>
                     </button>
                     <button
-                      type="button"
-                      onClick={() => {
-                        deleteService(svc.id);
-                        triggerToast(`Removed ${svc.title}`);
-                      }}
-                      className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                      onClick={() => deleteService(s.id)}
+                      className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -1910,216 +1449,289 @@ export const AdminPage: React.FC = () => {
           </div>
         )}
 
-        {/* =================================================================== */}
-        {/* TAB 5: HERO STYLE & GLOBAL CMS                                      */}
-        {/* =================================================================== */}
-        {activeTab === 'landing' && (
+        {/* =====================================================================
+            TAB 5: GLOBAL WEBSITE & HERO STYLE CMS
+        ====================================================================== */}
+        {activeTab === 'cms' && (
           <form
-            onSubmit={handleSaveLanding}
-            className="max-w-3xl bg-white rounded-2xl p-6 sm:p-8 border border-purple-200 shadow-sm space-y-6"
+            onSubmit={handleSaveSiteConfig}
+            className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6 max-w-3xl"
           >
             <div>
-              <span className="text-xs font-mono uppercase tracking-wider text-[#5B21B6] font-bold block">
-                Homepage Visual Architecture
-              </span>
-              <h2 className="font-serif text-2xl font-bold text-[#120721]">
-                Hero Layout Style &amp; Global Content CMS
-              </h2>
+              <h3 className="font-serif-luxury text-2xl font-bold text-[#07142B]">
+                Hero Layout &amp; Global Website Content Editor
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Switch between a Full-Bleed Architectural Image Hero and the Picture-in-Picture
+                Split Hero, or customize your headlines, Mission, Vision, and office details.
+              </p>
             </div>
 
             {/* Hero Layout Mode Selector */}
-            <div className="space-y-2">
-              <label className="block text-xs font-bold text-slate-700">
-                Choose Homepage Hero Style
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                Landing Page Hero Style
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => setHeroStyle('full-bleed')}
-                  className={`p-4 rounded-xl border-2 text-left transition-all cursor-pointer ${
-                    heroStyle === 'full-bleed'
-                      ? 'bg-[#2E1065] text-white border-[#D4AF37] shadow-md'
-                      : 'bg-[#FAF9FC] text-[#120721] border-purple-100'
+                  onClick={() => setCmsConfig({ ...cmsConfig, heroStyle: 'full-bleed' })}
+                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                    cmsConfig.heroStyle === 'full-bleed'
+                      ? 'bg-[#0A1D42] text-white border-[#0A1D42] shadow-md'
+                      : 'bg-slate-50 text-[#07142B] border-slate-200'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-serif font-bold text-sm">
-                      Full-Screen Image Hero (Words on Image)
-                    </span>
-                    <Maximize2 className="w-4 h-4 text-[#F59E0B]" />
-                  </div>
+                  <p className="font-bold text-sm">Full-Bleed Image Hero (Words on Image)</p>
                   <p
-                    className={`text-xs ${
-                      heroStyle === 'full-bleed' ? 'text-purple-200' : 'text-slate-500'
+                    className={`text-xs mt-1 ${
+                      cmsConfig.heroStyle === 'full-bleed'
+                        ? 'text-blue-100/80'
+                        : 'text-slate-500'
                     }`}
                   >
-                    Architectural photograph fills the entire hero background with words overlaid.
+                    Immersive full-screen luxury residence backdrop with typography overlaid.
                   </p>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setHeroStyle('split')}
-                  className={`p-4 rounded-xl border-2 text-left transition-all cursor-pointer ${
-                    heroStyle === 'split'
-                      ? 'bg-[#2E1065] text-white border-[#D4AF37] shadow-md'
-                      : 'bg-[#FAF9FC] text-[#120721] border-purple-100'
+                  onClick={() => setCmsConfig({ ...cmsConfig, heroStyle: 'split' })}
+                  className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                    cmsConfig.heroStyle === 'split'
+                      ? 'bg-[#0A1D42] text-white border-[#0A1D42] shadow-md'
+                      : 'bg-slate-50 text-[#07142B] border-slate-200'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-serif font-bold text-sm">
-                      Split Picture-in-Picture Frame
-                    </span>
-                    <Layout className="w-4 h-4 text-[#F59E0B]" />
-                  </div>
+                  <p className="font-bold text-sm">Picture-in-Picture Split Hero</p>
                   <p
-                    className={`text-xs ${
-                      heroStyle === 'split' ? 'text-purple-200' : 'text-slate-500'
+                    className={`text-xs mt-1 ${
+                      cmsConfig.heroStyle === 'split' ? 'text-blue-100/80' : 'text-slate-500'
                     }`}
                   >
-                    Headline on the left column with a gold-rimmed architectural showcase card on
-                    the right.
+                    Left editorial headline with dual framed architectural showcase cards on right.
                   </p>
                 </button>
               </div>
             </div>
 
-            <MediaUploadManager
-              images={heroImages}
-              onChange={setHeroImages}
-              multiple={false}
-              label="Hero Background / Showcase Photo (Upload, Camera, or Link)"
-            />
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Subtle Top Eyebrow Tag
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Hero Top Badge
                 </label>
                 <input
                   type="text"
-                  value={heroTagline}
-                  onChange={(e) => setHeroTagline(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm"
+                  value={cmsConfig.heroBadge}
+                  onChange={(e) => setCmsConfig({ ...cmsConfig, heroBadge: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Hero Headline
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Hero Headline Line 1
                 </label>
                 <input
                   type="text"
-                  value={heroHeadline}
-                  onChange={(e) => setHeroHeadline(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm"
+                  value={cmsConfig.heroTitleLine1}
+                  onChange={(e) => setCmsConfig({ ...cmsConfig, heroTitleLine1: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Hero Subheadline
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Hero Gold Highlight Line
               </label>
-              <textarea
-                rows={3}
-                value={heroSubheadline}
-                onChange={(e) => setHeroSubheadline(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm"
+              <input
+                type="text"
+                value={cmsConfig.heroTitleHighlight}
+                onChange={(e) =>
+                  setCmsConfig({ ...cmsConfig, heroTitleHighlight: e.target.value })
+                }
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
               />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Hero Subtitle</label>
+              <textarea
+                rows={2}
+                value={cmsConfig.heroSubtitle}
+                onChange={(e) => setCmsConfig({ ...cmsConfig, heroSubtitle: e.target.value })}
+                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Hero Primary Image (Upload, Camera, or Link)
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={cmsConfig.heroImage}
+                  onChange={(e) => setCmsConfig({ ...cmsConfig, heroImage: e.target.value })}
+                  className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 text-xs"
+                />
+                <label className="px-3.5 py-2 rounded-xl bg-blue-50 text-[#0A1D42] text-xs font-bold cursor-pointer flex items-center gap-1.5">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Upload</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) =>
+                      handleFileOrCameraUpload(e, (url) =>
+                        setCmsConfig({ ...cmsConfig, heroImage: url })
+                      )
+                    }
+                  />
+                </label>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Headquarters Address
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Mission Statement
                 </label>
-                <input
-                  type="text"
-                  value={contactAddress}
-                  onChange={(e) => setContactAddress(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm"
+                <textarea
+                  rows={3}
+                  value={cmsConfig.missionStatement}
+                  onChange={(e) =>
+                    setCmsConfig({ ...cmsConfig, missionStatement: e.target.value })
+                  }
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Vision Statement
+                </label>
+                <textarea
+                  rows={3}
+                  value={cmsConfig.visionStatement}
+                  onChange={(e) => setCmsConfig({ ...cmsConfig, visionStatement: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Head Office Address
+                </label>
+                <input
+                  type="text"
+                  value={cmsConfig.headOfficeAddress}
+                  onChange={(e) =>
+                    setCmsConfig({ ...cmsConfig, headOfficeAddress: e.target.value })
+                  }
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   Official Email
                 </label>
                 <input
                   type="email"
-                  value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm"
+                  value={cmsConfig.contactEmail}
+                  onChange={(e) => setCmsConfig({ ...cmsConfig, contactEmail: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-[#3B0764] hover:bg-[#4C1D95] text-white font-bold text-xs uppercase tracking-wider cursor-pointer"
+              className="py-3.5 px-6 rounded-xl bg-[#0A1D42] hover:bg-[#07142B] text-[#FACC15] font-bold text-xs uppercase tracking-wider cursor-pointer flex items-center gap-2"
             >
-              <Save className="w-4 h-4 text-[#F59E0B]" />
-              <span>Save Hero Style &amp; Global Settings</span>
+              <Save className="w-4 h-4" />
+              <span>Save Global Website Settings</span>
             </button>
           </form>
         )}
 
-        {/* =================================================================== */}
-        {/* TAB 6: CLIENT ENQUIRIES                                             */}
-        {/* =================================================================== */}
-        {activeTab === 'enquiries' && (
-          <div className="space-y-4">
-            {enquiries.map((enq) => (
-              <div
-                key={enq.id}
-                className="bg-white rounded-xl p-5 border border-purple-100 space-y-3"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <span className="text-xs font-mono text-[#5B21B6] font-bold">
-                      {enq.id} · {enq.type}
-                    </span>
-                    <h3 className="font-serif text-lg font-bold text-[#120721]">{enq.subject}</h3>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={enq.status}
-                      onChange={(e) =>
-                        updateEnquiryStatus(enq.id, e.target.value as typeof enq.status)
-                      }
-                      className="px-3 py-1.5 rounded-lg border border-purple-200 text-xs font-semibold bg-[#FAF9FC]"
-                    >
-                      <option value="New">New</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Closed">Closed</option>
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => deleteEnquiry(enq.id)}
-                      className="p-1.5 text-slate-400 hover:text-red-600 cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+        {/* =====================================================================
+            TAB 6: BOOKINGS & INQUIRIES
+        ====================================================================== */}
+        {activeTab === 'leads' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <h3 className="font-serif-luxury text-xl font-bold text-[#07142B]">
+                Inspection Bookings ({bookings.length})
+              </h3>
+              {bookings.length === 0 ? (
+                <div className="bg-white rounded-2xl p-8 text-center text-sm text-slate-500 border border-slate-200">
+                  No inspection bookings logged yet.
                 </div>
-                <p className="text-xs sm:text-sm text-slate-600">{enq.message}</p>
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-purple-50 text-xs font-mono text-slate-500">
-                  <span>
-                    {enq.name} · {enq.phone} · {enq.email}
-                  </span>
-                  <a
-                    href={getWhatsAppUrl(
-                      `Hello ${enq.name}, following up from Etosmania Global Properties regarding "${enq.subject}".`
-                    )}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-emerald-700 font-bold"
+              ) : (
+                bookings.map((b) => (
+                  <div
+                    key={b.id}
+                    className="bg-white rounded-2xl p-5 border border-slate-200 space-y-2"
                   >
-                    <MessageCircle className="w-3.5 h-3.5" />
-                    <span>Reply on WhatsApp</span>
-                  </a>
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono-tech text-xs font-bold text-[#0A1D42]">
+                        {b.id} • {b.inspectionType}
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-700">
+                        {b.status}
+                      </span>
+                    </div>
+                    <h4 className="font-bold text-base text-[#07142B]">{b.clientName}</h4>
+                    <p className="text-xs text-slate-600">
+                      Property: <strong>{b.propertyTitle}</strong>
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      Date: {b.preferredDate} at {b.preferredTime} • Tel: {b.clientPhone}
+                    </p>
+                    <div className="pt-2 flex gap-2">
+                      <button
+                        onClick={() => updateBookingStatus(b.id, 'Confirmed')}
+                        className="px-3 py-1.5 rounded-lg bg-[#0A1D42] text-[#FACC15] text-xs font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Mark Confirmed</span>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="font-serif-luxury text-xl font-bold text-[#07142B]">
+                Direct Advisory Inquiries ({inquiries.length})
+              </h3>
+              {inquiries.length === 0 ? (
+                <div className="bg-white rounded-2xl p-8 text-center text-sm text-slate-500 border border-slate-200">
+                  No contact inquiries submitted yet.
                 </div>
-              </div>
-            ))}
+              ) : (
+                inquiries.map((inq) => (
+                  <div
+                    key={inq.id}
+                    className="bg-white rounded-2xl p-5 border border-slate-200 space-y-2"
+                  >
+                    <span className="font-mono-tech text-xs font-bold text-[#0A1D42]">
+                      {inq.id} • {inq.serviceCategory} ({inq.budgetRange})
+                    </span>
+                    <h4 className="font-bold text-base text-[#07142B]">{inq.fullName}</h4>
+                    <p className="text-xs text-slate-500">
+                      {inq.email} • {inq.phone}
+                    </p>
+                    <p className="text-xs text-slate-700 bg-slate-50 p-3 rounded-xl">
+                      {inq.message}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         )}
       </div>

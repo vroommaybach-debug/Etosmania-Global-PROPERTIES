@@ -1,104 +1,131 @@
 import React from 'react';
 
 interface LogoProps {
-  variant?: 'dark' | 'light';
   className?: string;
+  showText?: boolean;
   showTagline?: boolean;
+  variant?: 'dark' | 'light';
 }
 
-/**
- * Custom SVG Architectural Twin-Gable Roofline Crest & Wordmark
- * for Etosmania Global Properties Investment Limited
- * Inspired directly by the twin-gable emblem on the official Etosmania banner.
- */
-export const EtosmaniaLogo: React.FC<LogoProps> = ({
-  variant = 'dark',
-  className = '',
+export const BahamsLogo: React.FC<LogoProps> = ({
+  className = 'w-10 h-10',
+  showText = true,
   showTagline = true,
+  variant = 'dark',
 }) => {
   const isLight = variant === 'light';
 
   return (
-    <div className={`inline-flex items-center gap-3 select-none group ${className}`}>
-      {/* Twin-Gable Sovereign Purple & Gold Emblem */}
-      <div
-        className={`relative w-11 h-11 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-105 shadow-md ${
-          isLight
-            ? 'bg-gradient-to-br from-[#4C1D95] to-[#1E0938] border border-[#D4AF37]/60'
-            : 'bg-gradient-to-br from-[#3B0764] to-[#1E0938] border border-[#D4AF37]/70'
-        }`}
-      >
+    <div className="inline-flex items-center gap-3 select-none group shrink-0 whitespace-nowrap">
+      <div className="relative flex items-center justify-center shrink-0">
         <svg
           viewBox="0 0 64 64"
-          className="w-8 h-8"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
+          className={`${className} transition-transform duration-300 group-hover:scale-105`}
         >
-          {/* Left main gable roof */}
+          {/* Royal Dark Blue Monogram Shield */}
+          <rect
+            width="64"
+            height="64"
+            rx="14"
+            fill={isLight ? '#07142B' : '#0A1D42'}
+          />
+          <rect
+            x="3"
+            y="3"
+            width="58"
+            height="58"
+            rx="11"
+            stroke="url(#etosGoldGrad)"
+            strokeWidth="1.6"
+            strokeOpacity="0.85"
+          />
+
+          {/* Twin Architectural Roofs (Inspired by Etosmania Banner Crest in Royal Blue, White & Yellow) */}
           <path
-            d="M7 31L24 16L41 31"
-            stroke="#D4AF37"
-            strokeWidth="3.8"
+            d="M12 31L26 17L40 31"
+            stroke="#38BDF8"
+            strokeWidth="3.2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          {/* Right twin gable roof */}
           <path
-            d="M27 33L42 20L57 33"
-            stroke="#F59E0B"
-            strokeWidth="3.4"
+            d="M26 31L40 17L52 29"
+            stroke="url(#etosGoldGrad)"
+            strokeWidth="3.2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          {/* Architectural vertical walls */}
+
+          {/* Structural Residence Frame */}
           <path
-            d="M13 30V48H51V32"
+            d="M17 29V46H47V28"
             stroke="#FFFFFF"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+
+          {/* Lit Gold Windows */}
+          <rect x="23" y="32" width="4.5" height="4.5" rx="1" fill="#FACC15" />
+          <rect x="29.5" y="32" width="4.5" height="4.5" rx="1" fill="#FACC15" />
+          <rect x="23" y="38.5" width="4.5" height="4.5" rx="1" fill="#38BDF8" />
+          <rect x="29.5" y="38.5" width="4.5" height="4.5" rx="1" fill="#FACC15" />
+
+          {/* Gold Plinth */}
+          <path
+            d="M11 46H53"
+            stroke="url(#etosGoldGrad)"
             strokeWidth="2.8"
             strokeLinecap="round"
-            strokeLinejoin="round"
           />
-          {/* Left residence window grid */}
-          <rect x="19" y="32" width="4.5" height="4.5" rx="0.8" fill="#D4AF37" />
-          <rect x="25.5" y="32" width="4.5" height="4.5" rx="0.8" fill="#D4AF37" />
-          <rect x="19" y="38.5" width="4.5" height="4.5" rx="0.8" fill="#D4AF37" />
-          <rect x="25.5" y="38.5" width="4.5" height="4.5" rx="0.8" fill="#D4AF37" />
-          {/* Right residence gold window */}
-          <rect x="37.5" y="35.5" width="5.5" height="5.5" rx="1" fill="#F59E0B" />
-          {/* Gold plinth foundation */}
-          <path d="M8 48H56" stroke="#D4AF37" strokeWidth="3.2" strokeLinecap="round" />
+
+          <defs>
+            <linearGradient
+              id="etosGoldGrad"
+              x1="8"
+              y1="12"
+              x2="56"
+              y2="54"
+              gradientUnits="userSpaceOnUse"
+            >
+              <stop stopColor="#FEF08A" />
+              <stop offset="0.5" stopColor="#FACC15" />
+              <stop offset="1" stopColor="#CA8A04" />
+            </linearGradient>
+          </defs>
         </svg>
       </div>
 
-      {/* Brand Wordmark */}
-      <div className="flex flex-col leading-none">
-        <div className="flex items-baseline gap-1">
-          <span
-            className={`font-serif font-extrabold text-lg sm:text-xl tracking-tight ${
-              isLight ? 'text-white' : 'text-[#2E1065]'
-            }`}
-          >
-            ETOSMANIA
-          </span>
-          <span className="font-sans font-bold text-[10px] sm:text-xs tracking-[0.16em] uppercase text-[#D4AF37]">
-            GLOBAL
-          </span>
+      {showText && (
+        <div className="flex flex-col leading-none">
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            <span
+              className={`font-serif-luxury text-base sm:text-xl font-bold tracking-tight ${
+                isLight ? 'text-white' : 'text-[#07142B]'
+              }`}
+            >
+              ETOSMANIA
+            </span>
+            <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest px-1.5 py-0.5 rounded bg-[#FACC15] text-[#07142B] border border-[#EAB308]">
+              GLOBAL
+            </span>
+          </div>
+          {showTagline && (
+            <span
+              className={`text-[8px] sm:text-[9px] font-semibold tracking-[0.18em] sm:tracking-[0.22em] uppercase mt-1 ${
+                isLight ? 'text-[#FACC15]' : 'text-[#0A1D42]'
+              }`}
+            >
+              Properties Investment Ltd
+            </span>
+          )}
         </div>
-        {showTagline && (
-          <span
-            className={`text-[9px] font-mono uppercase tracking-[0.18em] mt-0.5 ${
-              isLight ? 'text-purple-200/85' : 'text-slate-600'
-            }`}
-          >
-            Properties Investment Ltd
-          </span>
-        )}
-      </div>
+      )}
     </div>
   );
 };
 
-// Keep BahamsLogo export alias so any existing import continues working seamlessly
-export const BahamsLogo = EtosmaniaLogo;
-export default EtosmaniaLogo;
+export const EtosmaniaLogo = BahamsLogo;
+export default BahamsLogo;

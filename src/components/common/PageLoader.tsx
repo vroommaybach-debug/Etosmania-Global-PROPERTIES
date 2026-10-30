@@ -1,162 +1,126 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
+import { BahamsLogo } from './BahamsLogo';
 
-const ROUTE_LABELS: Record<string, string> = {
-  '/': 'Sovereign Real Estate Gold',
-  '/properties': 'Verified Land, Houses & Commercial Assets',
-  '/co-ownership': 'Real Estate Co-Ownership & Fractional Wealth',
-  '/developments': 'Signature Estates & Master Developments',
-  '/services': '8 Core Real Estate & Investment Pillars',
-  '/about': 'Our Mission, Vision & Corporate Creed',
-  '/contact': '10B Thomas Estate, Ajah — Private Concierge',
-  '/admin': 'Executive Management Console',
+const PAGE_LABELS: Record<string, string> = {
+  '/': 'Real Estate Gold • Ajah • Lekki • Egbeda • Akowonjo • Agbara',
+  '/properties': 'Verified Land, Residential & Commercial Portfolio',
+  '/co-ownership': 'Fractional Real Estate Co-Ownership & Wealth Hub',
+  '/services': 'Our 8 Core Real Estate & Advisory Services',
+  '/developments': 'Sustainable Community-Centered Estate Developments',
+  '/about': 'Mission, Vision & Core Values — Etosmania Global',
+  '/contact': '10b Thomas Estate, Ajah, Lekki • Advisory Concierge',
+  '/admin': 'Executive Inventory & Operations Portal',
 };
 
 export const PageLoader: React.FC = () => {
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
-  const [progress, setProgress] = useState(12);
-  const [isInitial, setIsInitial] = useState(true);
+  const [progress, setProgress] = useState(14);
 
   useEffect(() => {
     setIsLoading(true);
-    setProgress(14);
+    setProgress(18);
 
-    // Deliberate, artistic pacing so visitors appreciate the twin-gable gold crest art
-    const initialDuration = 2100;
-    const routeDuration = 1250;
-    const totalDuration = isInitial ? initialDuration : routeDuration;
-
-    const step1 = window.setTimeout(() => setProgress(38), Math.round(totalDuration * 0.22));
-    const step2 = window.setTimeout(() => setProgress(68), Math.round(totalDuration * 0.52));
-    const step3 = window.setTimeout(() => setProgress(92), Math.round(totalDuration * 0.8));
-    const done = window.setTimeout(() => {
-      setProgress(100);
+    const t1 = setTimeout(() => setProgress(46), 300);
+    const t2 = setTimeout(() => setProgress(78), 680);
+    const t3 = setTimeout(() => setProgress(100), 1050);
+    const t4 = setTimeout(() => {
       setIsLoading(false);
-      setIsInitial(false);
-    }, totalDuration);
+    }, 1350);
 
     return () => {
-      window.clearTimeout(step1);
-      window.clearTimeout(step2);
-      window.clearTimeout(step3);
-      window.clearTimeout(done);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
     };
   }, [location.pathname]);
 
-  if (!isLoading) return null;
-
-  const baseRoute = location.pathname.startsWith('/properties/')
-    ? '/properties'
-    : location.pathname.startsWith('/developments/')
-    ? '/developments'
-    : location.pathname;
-
-  const subtitle = ROUTE_LABELS[baseRoute] || 'Etosmania Global Properties';
+  const currentLabel =
+    PAGE_LABELS[location.pathname] ||
+    (location.pathname.startsWith('/properties/')
+      ? 'Loading Verified Property Dossier...'
+      : location.pathname.startsWith('/developments/')
+      ? 'Loading Estate Masterplan...'
+      : 'Etosmania Global Properties Investment Limited');
 
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      aria-label="Loading page"
-      className="fixed inset-0 z-[120] flex flex-col items-center justify-center bg-[#120721] text-white transition-opacity duration-500 overflow-hidden"
-    >
-      {/* Top golden progress bar */}
-      <div className="fixed top-0 left-0 right-0 h-1 bg-purple-950/80 overflow-hidden">
-        <div
-          className="h-full bg-gradient-to-r from-[#D4AF37] via-[#FDE68A] to-[#F59E0B] transition-all duration-300 ease-out"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-
-      {/* Subtle Ambient Radial Glow Behind the Crest */}
-      <div
-        className="absolute w-96 h-96 rounded-full bg-[#D4AF37]/10 blur-3xl pointer-events-none"
-        aria-hidden="true"
-      />
-
-      {/* Central Architectural Twin-Gable Crest Art */}
-      <div className="relative z-10 flex flex-col items-center px-6 text-center max-w-md">
-        <div className="relative mb-8 flex items-center justify-center">
-          {/* Outer rotating diamond frame */}
-          <div className="w-28 h-28 rounded-3xl border border-[#D4AF37]/35 rotate-45 absolute transition-transform duration-1000" />
-          <div className="w-28 h-28 rounded-3xl border border-purple-500/25 -rotate-12 absolute" />
-
-          {/* Main Emblem Vault */}
-          <div className="relative w-24 h-24 rounded-2xl bg-gradient-to-br from-[#3B0764] via-[#240B46] to-[#120721] border-2 border-[#D4AF37]/80 shadow-[0_0_50px_rgba(212,175,55,0.25)] flex items-center justify-center">
-            <svg
-              viewBox="0 0 64 64"
-              className="w-14 h-14"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              {/* Primary Twin-Gable Architectural Rooflines */}
-              <path
-                d="M7 31L24 15L41 31"
-                stroke="#D4AF37"
-                strokeWidth="3.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M26 33L42 19L57 33"
-                stroke="#F59E0B"
-                strokeWidth="3.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              {/* Vertical Architectural Pillars */}
-              <path
-                d="M13 30V48H51V32"
-                stroke="#F8FAFC"
-                strokeWidth="2.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              {/* Illuminated Gold Window Panes */}
-              <rect x="19.5" y="32" width="4.5" height="4.5" rx="0.8" fill="#D4AF37" />
-              <rect x="26" y="32" width="4.5" height="4.5" rx="0.8" fill="#FDE68A" />
-              <rect x="19.5" y="38.5" width="4.5" height="4.5" rx="0.8" fill="#FDE68A" />
-              <rect x="26" y="38.5" width="4.5" height="4.5" rx="0.8" fill="#D4AF37" />
-              {/* East Wing Window */}
-              <rect x="37.5" y="35" width="6" height="6" rx="1" fill="#F59E0B" />
-              {/* Foundation Plinth */}
-              <path d="M8 48H56" stroke="#D4AF37" strokeWidth="3.2" strokeLinecap="round" />
-            </svg>
-          </div>
-        </div>
-
-        <p className="text-[10px] font-mono uppercase tracking-[0.34em] text-[#D4AF37] mb-2">
-          Etosmania Global Properties
-        </p>
-        <h2 className="font-serif text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2">
-          Real Estate Gold
-        </h2>
-        <p className="text-xs font-medium text-purple-200/80 mb-7 tracking-wide">{subtitle}</p>
-
-        {/* Fine Gold Progress Track + Percentage */}
-        <div className="w-60 h-1.5 rounded-full bg-white/10 overflow-hidden mb-3 p-0.5">
+    <AnimatePresence>
+      {isLoading && (
+        <motion.div
+          key="etosmania-page-loader"
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } }}
+          className="fixed inset-0 z-[120] flex flex-col items-center justify-between bg-[#07142B] text-white px-6 py-10 pointer-events-auto overflow-hidden"
+        >
+          {/* Ambient Royal Blue & Gold Architectural Glow */}
           <div
-            className="h-full rounded-full bg-gradient-to-r from-[#D4AF37] via-[#FDE68A] to-[#F59E0B] transition-all duration-300 ease-out"
-            style={{ width: `${progress}%` }}
+            className="absolute inset-0 pointer-events-none opacity-45"
+            style={{
+              background:
+                'radial-gradient(circle at 50% 35%, rgba(250, 204, 21, 0.16) 0%, rgba(15, 41, 90, 0.65) 45%, rgba(7, 20, 43, 0.98) 100%)',
+            }}
           />
-        </div>
 
-        <div className="flex items-center gap-3 text-[11px] font-mono text-purple-300/70">
-          <span>{progress}%</span>
-          <span>·</span>
-          <span>Lagos, Nigeria</span>
-          <span>·</span>
-          <button
-            type="button"
-            onClick={() => setIsLoading(false)}
-            className="text-[#F59E0B] hover:underline cursor-pointer whitespace-nowrap"
-          >
-            Skip Intro
-          </button>
-        </div>
-      </div>
-    </div>
+          {/* Top Bar */}
+          <div className="relative z-10 w-full max-w-6xl flex items-center justify-between text-[11px] font-mono-tech uppercase tracking-[0.22em] text-blue-200/80">
+            <span>ETOSMANIA GLOBAL PROPERTIES</span>
+            <span className="text-[#FACC15] font-semibold">REAL ESTATE GOLD</span>
+          </div>
+
+          {/* Center Architectural Crest & Animated Progress */}
+          <div className="relative z-10 flex flex-col items-center text-center max-w-md w-full">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+              className="mb-6 p-5 rounded-3xl bg-white/[0.05] border border-[#FACC15]/30 shadow-2xl backdrop-blur-md"
+            >
+              <BahamsLogo variant="light" className="w-14 h-14" showText={false} />
+            </motion.div>
+
+            <motion.p
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.35 }}
+              className="font-serif-luxury text-2xl sm:text-3xl font-bold tracking-tight text-white mb-2"
+            >
+              Etosmania Global Properties
+            </motion.p>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.18, duration: 0.35 }}
+              className="text-xs sm:text-sm text-[#FACC15] font-medium tracking-wide mb-7"
+            >
+              {currentLabel}
+            </motion.p>
+
+            {/* Gold Shimmer Progress Bar */}
+            <div className="w-64 sm:w-72 h-1.5 bg-white/10 rounded-full overflow-hidden p-[1px] border border-white/15">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-[#38BDF8] via-[#FACC15] to-[#FEF08A]"
+                initial={{ width: '15%' }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.28, ease: 'easeOut' }}
+              />
+            </div>
+
+            <div className="mt-3 flex items-center gap-2 text-[10px] font-mono-tech uppercase tracking-[0.25em] text-blue-200/70">
+              <span> integrity • professionalism • value </span>
+              <span className="text-[#FACC15] font-bold">{progress}%</span>
+            </div>
+          </div>
+
+          {/* Bottom Address Footer */}
+          <div className="relative z-10 text-center text-[11px] text-blue-200/70 tracking-wider">
+            Ajah • Lekki • Egbeda • Akowonjo • Agbara • Lagos State
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

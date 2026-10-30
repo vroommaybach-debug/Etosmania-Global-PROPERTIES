@@ -2,17 +2,21 @@ import { Property } from '../types';
 
 export interface FilterState {
   category?: 'all' | 'land' | 'residential' | 'commercial' | 'co-ownership';
-  location: string;
-  type: string;
-  bedrooms: string | number;
-  minPrice: number;
-  maxPrice: number;
-  sortBy: 'newest' | 'price-asc' | 'price-desc';
-  searchQuery: string;
+  location?: string;
+  selectedLocation?: string;
+  type?: string;
+  selectedType?: string;
+  bedrooms?: string | number;
+  minPrice?: number;
+  maxPrice?: number;
+  priceRange?: string;
+  sortBy?: 'newest' | 'price-asc' | 'price-desc';
+  searchQuery?: string;
 }
 
 /**
  * Pure client-side filtering and sorting for Etosmania Global Properties listings
+ * across Ajah, Lekki, Egbeda, Akowonjo, Agbara, Ibeju-Lekki, Epe, VI, Ikoyi & Ikeja GRA.
  */
 export function filterProperties(properties: Property[], filter: FilterState): Property[] {
   return properties
@@ -23,60 +27,89 @@ export function filterProperties(properties: Property[], filter: FilterState): P
         if (filter.category === 'commercial' && property.type !== 'Commercial') return false;
         if (
           filter.category === 'residential' &&
-          !['Villa', 'Penthouse', 'Duplex', 'Terrace', 'Apartment'].includes(property.type)
+          !['Residential', 'Villa', 'Penthouse', 'Duplex', 'Terrace', 'Apartment'].includes(
+            property.type
+          )
         ) {
           return false;
         }
-        if (filter.category === 'co-ownership' && !property.coOwnershipEligible) return false;
+        if (
+          filter.category === 'co-ownership' &&
+          property.type !== 'Co-Ownership' &&
+          !property.coOwnershipDetails
+        ) {
+          return false;
+        }
       }
 
-      // Location filter
-      if (
-        filter.location &&
-        filter.location !== 'all' &&
-        filter.location !== 'All' &&
-        property.location !== filter.location
-      ) {
-        return false;
+      // Location / Corridor filter (matches area primarily)
+      const locFilter = filter.selectedLocation || filter.location;
+      if (locFilter && locFilter !== 'all' && locFilter !== 'All') {
+        const targetLoc = locFilter.toLowerCase();
+        const matchesArea = property.area
+          ? property.area.toLowerCase() === targetLoc
+          : (property.location || '').toLowerCase() === targetLoc;
+        if (!matchesArea) {
+          return false;
+        }
       }
 
       // Property type filter
+      const typeFilter = filter.selectedType || filter.type;
       if (
-        filter.type &&
-        filter.type !== 'all' &&
-        filter.type !== 'All' &&
-        property.type.toLowerCase() !== filter.type.toLowerCase()
+        typeFilter &&
+        typeFilter !== 'all' &&
+        typeFilter !== 'All' &&
+        property.type.toLowerCase() !== typeFilter.toLowerCase()
       ) {
         return false;
       }
 
       // Bedrooms filter
-      if (filter.bedrooms !== 'all' && filter.bedrooms !== 'All') {
+      if (
+        filter.bedrooms !== undefined &&
+        filter.bedrooms !== 'all' &&
+        filter.bedrooms !== 'All'
+      ) {
         const targetBeds = Number(filter.bedrooms);
-        if (targetBeds === 5) {
-          if (property.bedrooms < 5) return false;
-        } else if (property.bedrooms !== targetBeds) {
-          return false;
+        if (!isNaN(targetBeds) && targetBeds > 0) {
+          if (property.bedrooms < targetBeds) return false;
         }
       }
 
-      // Price range
-      if (filter.minPrice > 0 && property.price < filter.minPrice) {
+      // Explicit numeric min/max price range
+      if (filter.minPrice && filter.minPrice > 0 && property.price < filter.minPrice) {
         return false;
       }
-      if (filter.maxPrice > 0 && property.price > filter.maxPrice) {
+      if (filter.maxPrice && filter.maxPrice > 0 && property.price > filter.maxPrice) {
         return false;
+      }
+
+      // Named price range bucket
+      if (filter.priceRange && filter.priceRange !== 'All') {
+        if (filter.priceRange === 'under-50m' && property.price >= 50_000_000) return false;
+        if (
+          filter.priceRange === '50m-150m' &&
+          (property.price < 50_000_000 || property.price > 150_000_000)
+        ) {
+          return false;
+        }
+        if (
+          filter.priceRange === '150m-300m' &&
+          (property.price < 150_000_000 || property.price > 300_000_000)
+        ) {
+          return false;
+        }
+        if (filter.priceRange === 'above-300m' && property.price <= 300_000_000) return false;
       }
 
       // Text search query
       if (filter.searchQuery && filter.searchQuery.trim().length > 0) {
         const query = filter.searchQuery.toLowerCase().trim();
         const matchesTitle = property.title.toLowerCase().includes(query);
-        const matchesAddress = property.address.toLowerCase().includes(query);
-        const matchesLocation = property.location.toLowerCase().includes(query);
-        const matchesHighlights = (property.highlights || []).some((h) =>
-          h.toLowerCase().includes(query)
-        );
+        const matchesArea = (property.area || '').toLowerCase().includes(query);
+        const matchesLocation = (property.location || '').toLowerCase().includes(query);
+        const matchesDesc = (property.description || '').toLowerCase().includes(query);
         const matchesAmenities = (property.amenities || []).some((a) =>
           a.toLowerCase().includes(query)
         );
@@ -84,9 +117,9 @@ export function filterProperties(properties: Property[], filter: FilterState): P
 
         if (
           !matchesTitle &&
-          !matchesAddress &&
+          !matchesArea &&
           !matchesLocation &&
-          !matchesHighlights &&
+          !matchesDesc &&
           !matchesAmenities &&
           !matchesId
         ) {

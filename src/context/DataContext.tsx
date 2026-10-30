@@ -2,628 +2,710 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   Property,
   DevelopmentProject,
-  CoOwnershipProject,
+  InspectionBooking,
+  ContactInquiry,
   ServiceItem,
-  EnquiryRecord,
-  LandingPageConfig,
-  Testimonial,
+  CoOwnershipAsset,
+  SiteConfig,
 } from '../types';
 import {
-  PROPERTIES_DATA,
-  DEVELOPMENTS_DATA,
-  CO_OWNERSHIP_PROJECTS,
-  SERVICES_DATA,
-  OFFICE_DETAILS,
-  TESTIMONIALS,
+  INITIAL_PROPERTIES,
+  INITIAL_DEVELOPMENTS,
+  CORE_SERVICES,
+  CO_OWNERSHIP_ASSETS,
+  DEFAULT_SITE_CONFIG,
 } from '../data/mockData';
+import { db, auth } from '../firebase';
 import {
-  db,
-  auth,
   collection,
+  onSnapshot,
   doc,
   setDoc,
   deleteDoc,
-  onSnapshot,
+  getDocs,
   writeBatch,
-  onAuthStateChanged,
-  User,
-} from '../firebase';
+} from 'firebase/firestore';
+import { onAuthStateChanged, User } from 'firebase/auth';
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | null | undefined;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  };
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo:
+        auth.currentUser?.providerData.map((provider) => ({
+          providerId: provider.providerId,
+          displayName: provider.displayName,
+          email: provider.email,
+          photoUrl: provider.photoURL,
+        })) || [],
+    },
+    operationType,
+    path,
+  };
+  console.warn('Firestore sync notice:', JSON.stringify(errInfo));
+}
 
 interface DataContextType {
   properties: Property[];
   developments: DevelopmentProject[];
-  coOwnershipProjects: CoOwnershipProject[];
   services: ServiceItem[];
-  enquiries: EnquiryRecord[];
-  landingConfig: LandingPageConfig;
-  testimonials: Testimonial[];
-  firebaseUser: User | null;
-  isFirestoreConnected: boolean;
-  addProperty: (property: Omit<Property, 'id' | 'slug'>) => void;
-  updateProperty: (id: string, updates: Partial<Property>) => void;
-  deleteProperty: (id: string) => void;
-  addDevelopment: (dev: Omit<DevelopmentProject, 'id' | 'slug'>) => void;
-  updateDevelopment: (id: string, updates: Partial<DevelopmentProject>) => void;
-  deleteDevelopment: (id: string) => void;
-  addCoOwnershipProject: (pool: Omit<CoOwnershipProject, 'id' | 'slug'>) => void;
-  updateCoOwnershipProject: (id: string, updates: Partial<CoOwnershipProject>) => void;
-  deleteCoOwnershipProject: (id: string) => void;
-  addService: (service: Omit<ServiceItem, 'id'>) => void;
-  updateService: (id: string, updates: Partial<ServiceItem>) => void;
-  deleteService: (id: string) => void;
-  addEnquiry: (enquiry: Omit<EnquiryRecord, 'id' | 'createdAt' | 'status'>) => void;
-  updateEnquiryStatus: (id: string, status: EnquiryRecord['status']) => void;
-  deleteEnquiry: (id: string) => void;
-  updateLandingConfig: (updates: Partial<LandingPageConfig>) => void;
-  resetToDefaults: () => void;
+  coOwnershipAssets: CoOwnershipAsset[];
+  siteConfig: SiteConfig;
+  bookings: InspectionBooking[];
+  inquiries: ContactInquiry[];
+  addProperty: (property: Omit<Property, 'id' | 'createdAt' | 'slug'>) => Promise<void>;
+  updateProperty: (property: Property) => Promise<void>;
+  deleteProperty: (id: string) => Promise<void>;
+  addDevelopment: (dev: Omit<DevelopmentProject, 'id'>) => Promise<void>;
+  updateDevelopment: (dev: DevelopmentProject) => Promise<void>;
+  deleteDevelopment: (id: string) => Promise<void>;
+  addService: (service: Omit<ServiceItem, 'id'>) => Promise<void>;
+  updateService: (service: ServiceItem) => Promise<void>;
+  deleteService: (id: string) => Promise<void>;
+  addCoOwnershipAsset: (asset: Omit<CoOwnershipAsset, 'id'>) => Promise<void>;
+  updateCoOwnershipAsset: (asset: CoOwnershipAsset) => Promise<void>;
+  deleteCoOwnershipAsset: (id: string) => Promise<void>;
+  updateSiteConfig: (config: SiteConfig) => Promise<void>;
+  addBooking: (booking: Omit<InspectionBooking, 'id' | 'createdAt' | 'status'>) => Promise<void>;
+  updateBookingStatus: (id: string, status: InspectionBooking['status']) => Promise<void>;
+  addInquiry: (inquiry: Omit<ContactInquiry, 'id' | 'createdAt'>) => Promise<void>;
+  resetDemoData: () => Promise<void>;
+  isInspectionModalOpen: boolean;
+  selectedPropertyForInspection: { id?: string; title?: string } | null;
+  openInspectionModal: (property?: { id: string; title: string }) => void;
+  closeInspectionModal: () => void;
+  user: User | null;
+  isAuthReady: boolean;
 }
-
-const DEFAULT_LANDING_CONFIG: LandingPageConfig = {
-  heroStyle: 'full-bleed',
-  heroTagline: 'Lagos · Private Wealth & Real Estate',
-  heroHeadline: 'Real Estate Gold You Are Looking For.',
-  heroSubheadline:
-    'World-class residential and commercial properties, verified land & houses, fractional co-ownership syndicates, and institutional property management across Lagos.',
-  heroImage: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2000&q=85',
-  announcementBanner:
-    'Now Allocating: Etosmania Gold Crest Courts (Ajah) & Co-Ownership Property Slots from ₦5M — Schedule a Private Physical or Live Video Tour',
-  showAnnouncement: true,
-  stats: {
-    yearsExperience: '100% Verified',
-    totalVolume: '8 Core Pillars',
-    verifiedAssets: 'C of O & Consent',
-    diasporaSatisfaction: '99.4%',
-  },
-  contactPhone: OFFICE_DETAILS.phone,
-  contactWhatsapp: OFFICE_DETAILS.whatsapp,
-  contactEmail: OFFICE_DETAILS.email,
-  contactAddress: OFFICE_DETAILS.address,
-};
-
-const SEED_ENQUIRIES: EnquiryRecord[] = [
-  {
-    id: 'ENQ-1001',
-    type: 'Inspection',
-    name: 'Engr. Tunde Adebayo',
-    email: 't.adebayo@energycorp.ng',
-    phone: '+234 803 555 0192',
-    subject: 'Physical Inspection: The Sovereign Gold 5-Bed Duplex (Thomas Estate, Ajah)',
-    message:
-      'I would like to visit your office at 10B Thomas Estate, Ajah this Thursday at 11:00 AM to inspect the 5-Bedroom Detached Duplex and review the Governor’s Consent.',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-    status: 'New',
-    meta: {
-      mode: 'In-Person Viewing (10B Thomas Estate, Ajah)',
-      date: '2026-05-18',
-      time: '11:00 AM (WAT)',
-    },
-  },
-  {
-    id: 'ENQ-1002',
-    type: 'Service',
-    name: 'Dr. Ngozi Okonkwo (UK Diaspora)',
-    email: 'ngozi.okonkwo@nhs.uk',
-    phone: '+44 7700 900412',
-    subject: 'Real Estate Co-ownership: 2 Slots in Thomas Estate Duplex Pool',
-    message:
-      'Interested in reserving 2 Co-Ownership slots (₦24M total) and scheduling a live WhatsApp video call to review the SPV Co-Ownership Deed.',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(),
-    status: 'In Progress',
-    meta: {
-      service: 'Real Estate Co-ownership',
-      budget: '₦24M (2 Co-Ownership Slots)',
-    },
-  },
-  {
-    id: 'ENQ-1003',
-    type: 'Development',
-    name: 'Alhaji Musa Danjuma',
-    email: 'mdanjuma@danjumaholdings.com',
-    phone: '+234 809 221 8834',
-    subject: 'Sales of Land: 4 Plots at Purple Haven, Ibeju-Lekki',
-    message:
-      'Please send the C of O survey coordinates and 6-month installment breakdown for four 600 SQM plots in Purple Haven.',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 42).toISOString(),
-    status: 'Closed',
-    meta: {
-      project: 'Purple Haven Serviced Land & Villas, Ibeju-Lekki',
-    },
-  },
-];
-
-const STORAGE_KEYS = {
-  PROPERTIES: 'etosmania_global_properties_v2',
-  DEVELOPMENTS: 'etosmania_global_developments_v2',
-  CO_OWNERSHIP: 'etosmania_global_coownership_v2',
-  SERVICES: 'etosmania_global_services_v2',
-  ENQUIRIES: 'etosmania_global_enquiries_v2',
-  LANDING: 'etosmania_global_landing_v2',
-};
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)+/g, '');
-}
+const STORAGE_KEYS = {
+  PROPERTIES: 'etosmania_global_properties_v3',
+  DEVELOPMENTS: 'etosmania_global_developments_v3',
+  SERVICES: 'etosmania_global_services_v3',
+  CO_OWNERSHIP: 'etosmania_global_coownership_v3',
+  SITE_CONFIG: 'etosmania_global_site_config_v3',
+  BOOKINGS: 'etosmania_global_bookings_v3',
+  INQUIRIES: 'etosmania_global_inquiries_v3',
+};
 
-function sanitizeForFirestore<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj));
+const REQUIRED_CORRIDOR_PROPERTY_IDS = ['EGP-109', 'EGP-110', 'EGP-111'];
+const REQUIRED_DEVELOPMENT_IDS = ['DEV-04'];
+const REQUIRED_COOWNERSHIP_IDS = ['EGP-CO-05'];
+
+function mergeMissingSeedItems<T extends { id: string }>(
+  loadedItems: T[],
+  seedItems: T[],
+  requiredIds: string[]
+): { merged: T[]; missingToPersist: T[] } {
+  const existingIds = new Set(loadedItems.map((item) => item.id));
+  const missingToPersist = seedItems.filter(
+    (seed) => requiredIds.includes(seed.id) && !existingIds.has(seed.id)
+  );
+  if (missingToPersist.length === 0) {
+    return { merged: loadedItems, missingToPersist: [] };
+  }
+  return {
+    merged: [...missingToPersist, ...loadedItems],
+    missingToPersist,
+  };
 }
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [properties, setProperties] = useState<Property[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.PROPERTIES);
-      return saved ? JSON.parse(saved) : PROPERTIES_DATA;
-    } catch {
-      return PROPERTIES_DATA;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const { merged } = mergeMissingSeedItems(parsed, INITIAL_PROPERTIES, REQUIRED_CORRIDOR_PROPERTY_IDS);
+          return merged;
+        }
+      }
+    } catch (e) {
+      console.error('Error loading properties from localStorage', e);
     }
+    return INITIAL_PROPERTIES;
   });
 
   const [developments, setDevelopments] = useState<DevelopmentProject[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.DEVELOPMENTS);
-      return saved ? JSON.parse(saved) : DEVELOPMENTS_DATA;
-    } catch {
-      return DEVELOPMENTS_DATA;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const { merged } = mergeMissingSeedItems(parsed, INITIAL_DEVELOPMENTS, REQUIRED_DEVELOPMENT_IDS);
+          return merged;
+        }
+      }
+    } catch (e) {
+      console.error('Error loading developments from localStorage', e);
     }
-  });
-
-  const [coOwnershipProjects, setCoOwnershipProjects] = useState<CoOwnershipProject[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.CO_OWNERSHIP);
-      return saved ? JSON.parse(saved) : CO_OWNERSHIP_PROJECTS;
-    } catch {
-      return CO_OWNERSHIP_PROJECTS;
-    }
+    return INITIAL_DEVELOPMENTS;
   });
 
   const [services, setServices] = useState<ServiceItem[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.SERVICES);
-      return saved ? JSON.parse(saved) : SERVICES_DATA;
-    } catch {
-      return SERVICES_DATA;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error loading services from localStorage', e);
     }
+    return CORE_SERVICES;
   });
 
-  const [enquiries, setEnquiries] = useState<EnquiryRecord[]>(() => {
+  const [coOwnershipAssets, setCoOwnershipAssets] = useState<CoOwnershipAsset[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.ENQUIRIES);
-      return saved ? JSON.parse(saved) : SEED_ENQUIRIES;
-    } catch {
-      return SEED_ENQUIRIES;
+      const saved = localStorage.getItem(STORAGE_KEYS.CO_OWNERSHIP);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const { merged } = mergeMissingSeedItems(parsed, CO_OWNERSHIP_ASSETS, REQUIRED_COOWNERSHIP_IDS);
+          return merged;
+        }
+      }
+    } catch (e) {
+      console.error('Error loading co-ownership assets from localStorage', e);
     }
+    return CO_OWNERSHIP_ASSETS;
   });
 
-  const [landingConfig, setLandingConfig] = useState<LandingPageConfig>(() => {
+  const [siteConfig, setSiteConfig] = useState<SiteConfig>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.LANDING);
-      return saved ? { ...DEFAULT_LANDING_CONFIG, ...JSON.parse(saved) } : DEFAULT_LANDING_CONFIG;
-    } catch {
-      return DEFAULT_LANDING_CONFIG;
+      const saved = localStorage.getItem(STORAGE_KEYS.SITE_CONFIG);
+      if (saved) {
+        return { ...DEFAULT_SITE_CONFIG, ...JSON.parse(saved) };
+      }
+    } catch (e) {
+      console.error('Error loading site config from localStorage', e);
+    }
+    return DEFAULT_SITE_CONFIG;
+  });
+
+  const [bookings, setBookings] = useState<InspectionBooking[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.BOOKINGS);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Error loading bookings from localStorage', e);
+      return [];
     }
   });
 
-  const [testimonials] = useState<Testimonial[]>(TESTIMONIALS);
-  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
-  const [isFirestoreConnected, setIsFirestoreConnected] = useState<boolean>(false);
+  const [inquiries, setInquiries] = useState<ContactInquiry[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.INQUIRIES);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Error loading inquiries from localStorage', e);
+      return [];
+    }
+  });
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setFirebaseUser(user);
-    });
-    return () => unsubscribe();
-  }, []);
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
-  // Real-time Firestore sync across all collections in dedicated database:
-  // ai-studio-etosmaniaglobalp-a4102c83-0b73-496b-94b6-83f133176e3b
-  useEffect(() => {
-    const unsubProps = onSnapshot(
-      collection(db, 'properties'),
-      (snapshot) => {
-        setIsFirestoreConnected(true);
-        if (!snapshot.empty) {
-          const loaded = snapshot.docs
-            .map((d) => d.data() as Property)
-            .filter((p) => !String(p.title || '').toLowerCase().includes('bahams'));
-          if (loaded.length > 0) {
-            loaded.sort((a, b) => a.id.localeCompare(b.id));
-            setProperties(loaded);
-          }
-        } else {
-          // Seed initial Etosmania properties into dedicated Firestore DB
-          const batch = writeBatch(db);
-          PROPERTIES_DATA.forEach((p) => {
-            batch.set(doc(db, 'properties', p.id), sanitizeForFirestore(p));
-          });
-          batch.commit().catch(() => {});
-        }
-      },
-      () => {}
-    );
+  const [isInspectionModalOpen, setIsInspectionModalOpen] = useState(false);
+  const [selectedPropertyForInspection, setSelectedPropertyForInspection] = useState<{
+    id?: string;
+    title?: string;
+  } | null>(null);
 
-    const unsubDevs = onSnapshot(
-      collection(db, 'developments'),
-      (snapshot) => {
-        setIsFirestoreConnected(true);
-        if (!snapshot.empty) {
-          const loaded = snapshot.docs
-            .map((d) => d.data() as DevelopmentProject)
-            .filter((d) => !String(d.developer || '').toLowerCase().includes('bahams'));
-          if (loaded.length > 0) {
-            loaded.sort((a, b) => a.id.localeCompare(b.id));
-            setDevelopments(loaded);
-          }
-        } else {
-          const batch = writeBatch(db);
-          DEVELOPMENTS_DATA.forEach((d) => {
-            batch.set(doc(db, 'developments', d.id), sanitizeForFirestore(d));
-          });
-          batch.commit().catch(() => {});
-        }
-      },
-      () => {}
-    );
-
-    const unsubServices = onSnapshot(
-      collection(db, 'services'),
-      (snapshot) => {
-        setIsFirestoreConnected(true);
-        if (!snapshot.empty) {
-          const loaded = snapshot.docs
-            .map((d) => d.data() as ServiceItem)
-            .filter((s) => !String(s.description || '').toLowerCase().includes('bahams'));
-          if (loaded.length > 0) {
-            setServices(loaded);
-          }
-        } else {
-          const batch = writeBatch(db);
-          SERVICES_DATA.forEach((s) => {
-            batch.set(doc(db, 'services', s.id), sanitizeForFirestore(s));
-          });
-          batch.commit().catch(() => {});
-        }
-      },
-      () => {}
-    );
-
-    const unsubCoOwn = onSnapshot(
-      doc(db, 'settings', 'coOwnershipCatalog'),
-      (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.data() as { items?: CoOwnershipProject[] };
-          if (Array.isArray(data?.items) && data.items.length > 0) {
-            setCoOwnershipProjects(data.items);
-          }
-        } else {
-          setDoc(
-            doc(db, 'settings', 'coOwnershipCatalog'),
-            { items: sanitizeForFirestore(CO_OWNERSHIP_PROJECTS), updatedAt: new Date().toISOString() },
-            { merge: true }
-          ).catch(() => {});
-        }
-      },
-      () => {}
-    );
-
-    const unsubLanding = onSnapshot(
-      doc(db, 'settings', 'landingConfig'),
-      (snapshot) => {
-        setIsFirestoreConnected(true);
-        if (snapshot.exists()) {
-          const data = snapshot.data() as LandingPageConfig;
-          if (data.heroHeadline && !String(data.heroHeadline).toLowerCase().includes('bahams')) {
-            setLandingConfig((prev) => ({ ...prev, ...data }));
-          }
-        } else {
-          setDoc(
-            doc(db, 'settings', 'landingConfig'),
-            sanitizeForFirestore({ ...DEFAULT_LANDING_CONFIG, updatedAt: new Date().toISOString() }),
-            { merge: true }
-          ).catch(() => {});
-        }
-      },
-      () => {}
-    );
-
-    const unsubEnquiries = onSnapshot(
-      collection(db, 'enquiries'),
-      (snapshot) => {
-        if (!snapshot.empty) {
-          const loaded = snapshot.docs.map((d) => d.data() as EnquiryRecord);
-          loaded.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          setEnquiries(loaded);
-        }
-      },
-      () => {}
-    );
-
-    return () => {
-      unsubProps();
-      unsubDevs();
-      unsubServices();
-      unsubCoOwn();
-      unsubLanding();
-      unsubEnquiries();
-    };
-  }, []);
-
-  // LocalStorage persistence
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.PROPERTIES, JSON.stringify(properties));
-    } catch {}
+    } catch (e) {
+      console.error(e);
+    }
   }, [properties]);
 
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.DEVELOPMENTS, JSON.stringify(developments));
-    } catch {}
+    } catch (e) {
+      console.error(e);
+    }
   }, [developments]);
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEYS.CO_OWNERSHIP, JSON.stringify(coOwnershipProjects));
-    } catch {}
-  }, [coOwnershipProjects]);
-
-  useEffect(() => {
-    try {
       localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(services));
-    } catch {}
+    } catch (e) {
+      console.error(e);
+    }
   }, [services]);
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEYS.ENQUIRIES, JSON.stringify(enquiries));
-    } catch {}
-  }, [enquiries]);
+      localStorage.setItem(STORAGE_KEYS.CO_OWNERSHIP, JSON.stringify(coOwnershipAssets));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [coOwnershipAssets]);
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEYS.LANDING, JSON.stringify(landingConfig));
-    } catch {}
-  }, [landingConfig]);
+      localStorage.setItem(STORAGE_KEYS.SITE_CONFIG, JSON.stringify(siteConfig));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [siteConfig]);
 
-  // 1. Properties CRUD
-  const addProperty = async (newProp: Omit<Property, 'id' | 'slug'>) => {
-    const id = `EGP-${Math.floor(200 + Math.random() * 800)}`;
-    const slug = `${slugify(newProp.title)}-${id.toLowerCase()}`;
-    const propertyRecord: Property = sanitizeForFirestore({ ...newProp, id, slug });
-
-    setProperties((prev) => [propertyRecord, ...prev]);
+  useEffect(() => {
     try {
-      await setDoc(doc(db, 'properties', id), propertyRecord);
-    } catch {}
-  };
+      localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [bookings]);
 
-  const updateProperty = async (id: string, updates: Partial<Property>) => {
-    let updatedItem: Property | null = null;
-    setProperties((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          const nextSlug = updates.title
-            ? `${slugify(updates.title)}-${id.toLowerCase()}`
-            : item.slug;
-          updatedItem = sanitizeForFirestore({ ...item, ...updates, slug: nextSlug });
-          return updatedItem;
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(inquiries));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [inquiries]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setIsAuthReady(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const unsubProperties = onSnapshot(
+      collection(db, 'properties'),
+      async (snapshot) => {
+        if (snapshot.empty) {
+          try {
+            const batch = writeBatch(db);
+            INITIAL_PROPERTIES.forEach((prop) => {
+              const docRef = doc(db, 'properties', prop.id);
+              batch.set(docRef, prop);
+            });
+            await batch.commit();
+          } catch (error) {
+            console.warn('Initial properties seed skipped:', error);
+          }
+        } else {
+          const props = snapshot.docs.map((d) => d.data() as Property);
+          const { merged, missingToPersist } = mergeMissingSeedItems(
+            props,
+            INITIAL_PROPERTIES,
+            REQUIRED_CORRIDOR_PROPERTY_IDS
+          );
+          if (missingToPersist.length > 0) {
+            try {
+              const batch = writeBatch(db);
+              missingToPersist.forEach((prop) => {
+                batch.set(doc(db, 'properties', prop.id), prop);
+              });
+              await batch.commit();
+            } catch (e) {
+              console.warn('Syncing new corridor properties to Firestore skipped:', e);
+            }
+          }
+          merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          setProperties(merged);
         }
-        return item;
-      })
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.LIST, 'properties');
+      }
     );
 
-    if (updatedItem) {
-      try {
-        await setDoc(doc(db, 'properties', id), updatedItem);
-      } catch {}
+    const unsubDevelopments = onSnapshot(
+      collection(db, 'developments'),
+      async (snapshot) => {
+        if (snapshot.empty) {
+          try {
+            const batch = writeBatch(db);
+            INITIAL_DEVELOPMENTS.forEach((dev) => {
+              const docRef = doc(db, 'developments', dev.id);
+              batch.set(docRef, dev);
+            });
+            await batch.commit();
+          } catch (error) {
+            console.warn('Initial developments seed skipped:', error);
+          }
+        } else {
+          const devs = snapshot.docs.map((d) => d.data() as DevelopmentProject);
+          const { merged, missingToPersist } = mergeMissingSeedItems(
+            devs,
+            INITIAL_DEVELOPMENTS,
+            REQUIRED_DEVELOPMENT_IDS
+          );
+          if (missingToPersist.length > 0) {
+            try {
+              const batch = writeBatch(db);
+              missingToPersist.forEach((dev) => {
+                batch.set(doc(db, 'developments', dev.id), dev);
+              });
+              await batch.commit();
+            } catch (e) {
+              console.warn('Syncing new corridor developments to Firestore skipped:', e);
+            }
+          }
+          setDevelopments(merged);
+        }
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.LIST, 'developments');
+      }
+    );
+
+    const unsubServices = onSnapshot(
+      collection(db, 'servicesCatalog'),
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const loaded = snapshot.docs.map((d) => d.data() as ServiceItem);
+          loaded.sort((a, b) => a.number.localeCompare(b.number));
+          setServices(loaded);
+        }
+      },
+      () => {}
+    );
+
+    const unsubCoOwnership = onSnapshot(
+      collection(db, 'coOwnershipCatalog'),
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const loaded = snapshot.docs.map((d) => d.data() as CoOwnershipAsset);
+          const { merged } = mergeMissingSeedItems(
+            loaded,
+            CO_OWNERSHIP_ASSETS,
+            REQUIRED_COOWNERSHIP_IDS
+          );
+          setCoOwnershipAssets(merged);
+        }
+      },
+      () => {}
+    );
+
+    const unsubSiteConfig = onSnapshot(
+      doc(db, 'siteSettings', 'main'),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setSiteConfig({ ...DEFAULT_SITE_CONFIG, ...(docSnap.data() as SiteConfig) });
+        }
+      },
+      () => {}
+    );
+
+    const unsubBookings = onSnapshot(
+      collection(db, 'bookings'),
+      (snapshot) => {
+        const bks = snapshot.docs.map((d) => d.data() as InspectionBooking);
+        bks.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setBookings(bks);
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.LIST, 'bookings');
+      }
+    );
+
+    const unsubInquiries = onSnapshot(
+      collection(db, 'inquiries'),
+      (snapshot) => {
+        const inqs = snapshot.docs.map((d) => d.data() as ContactInquiry);
+        inqs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setInquiries(inqs);
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.LIST, 'inquiries');
+      }
+    );
+
+    return () => {
+      unsubProperties();
+      unsubDevelopments();
+      unsubServices();
+      unsubCoOwnership();
+      unsubSiteConfig();
+      unsubBookings();
+      unsubInquiries();
+    };
+  }, [user]);
+
+  const addProperty = async (newProp: Omit<Property, 'id' | 'createdAt' | 'slug'>) => {
+    const id = `EGP-${Math.floor(100 + Math.random() * 900)}`;
+    const slug = newProp.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const createdAt = new Date().toISOString().split('T')[0];
+    const property: Property = { ...newProp, id, slug, createdAt };
+
+    setProperties((prev) => [property, ...prev]);
+
+    try {
+      await setDoc(doc(db, 'properties', id), property);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, `properties/${id}`);
+    }
+  };
+
+  const updateProperty = async (updatedProperty: Property) => {
+    const slug = updatedProperty.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const propWithSlug: Property = { ...updatedProperty, slug };
+
+    setProperties((prev) => prev.map((p) => (p.id === propWithSlug.id ? propWithSlug : p)));
+
+    try {
+      await setDoc(doc(db, 'properties', propWithSlug.id), propWithSlug);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `properties/${propWithSlug.id}`);
     }
   };
 
   const deleteProperty = async (id: string) => {
-    setProperties((prev) => prev.filter((item) => item.id !== id));
+    setProperties((prev) => prev.filter((p) => p.id !== id));
+
     try {
       await deleteDoc(doc(db, 'properties', id));
-    } catch {}
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `properties/${id}`);
+    }
   };
 
-  // 2. Developments CRUD
-  const addDevelopment = async (newDev: Omit<DevelopmentProject, 'id' | 'slug'>) => {
-    const id = `DEV-${Math.floor(10 + Math.random() * 89)}`;
-    const slug = `${slugify(newDev.name)}-${id.toLowerCase()}`;
-    const devRecord: DevelopmentProject = sanitizeForFirestore({ ...newDev, id, slug });
+  const addDevelopment = async (newDev: Omit<DevelopmentProject, 'id'>) => {
+    const id = `DEV-${Math.floor(10 + Math.random() * 90)}`;
+    const development: DevelopmentProject = { ...newDev, id };
+    setDevelopments((prev) => [development, ...prev]);
 
-    setDevelopments((prev) => [devRecord, ...prev]);
     try {
-      await setDoc(doc(db, 'developments', id), devRecord);
-    } catch {}
+      await setDoc(doc(db, 'developments', id), development);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, `developments/${id}`);
+    }
   };
 
-  const updateDevelopment = async (id: string, updates: Partial<DevelopmentProject>) => {
-    let updatedItem: DevelopmentProject | null = null;
-    setDevelopments((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          const nextSlug = updates.name
-            ? `${slugify(updates.name)}-${id.toLowerCase()}`
-            : item.slug;
-          updatedItem = sanitizeForFirestore({ ...item, ...updates, slug: nextSlug });
-          return updatedItem;
-        }
-        return item;
-      })
-    );
+  const updateDevelopment = async (updatedDev: DevelopmentProject) => {
+    setDevelopments((prev) => prev.map((d) => (d.id === updatedDev.id ? updatedDev : d)));
 
-    if (updatedItem) {
-      try {
-        await setDoc(doc(db, 'developments', id), updatedItem);
-      } catch {}
+    try {
+      await setDoc(doc(db, 'developments', updatedDev.id), updatedDev);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `developments/${updatedDev.id}`);
     }
   };
 
   const deleteDevelopment = async (id: string) => {
-    setDevelopments((prev) => prev.filter((item) => item.id !== id));
+    setDevelopments((prev) => prev.filter((d) => d.id !== id));
+
     try {
       await deleteDoc(doc(db, 'developments', id));
-    } catch {}
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `developments/${id}`);
+    }
   };
 
-  // 3. Co-Ownership Syndicates CRUD
-  const syncCoOwnershipToFirestore = async (nextList: CoOwnershipProject[]) => {
+  const addService = async (newService: Omit<ServiceItem, 'id'>) => {
+    const id = newService.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const service: ServiceItem = { ...newService, id };
+    setServices((prev) => [...prev, service]);
+
     try {
-      await setDoc(
-        doc(db, 'settings', 'coOwnershipCatalog'),
-        sanitizeForFirestore({ items: nextList })
-      );
-    } catch {}
+      await setDoc(doc(db, 'servicesCatalog', id), service);
+    } catch (error) {
+      console.warn('Saved service locally; Firestore sync skipped or restricted:', error);
+    }
   };
 
-  const addCoOwnershipProject = async (pool: Omit<CoOwnershipProject, 'id' | 'slug'>) => {
-    const id = `EGP-CO-${Math.floor(10 + Math.random() * 89)}`;
-    const slug = `${slugify(pool.title)}-${id.toLowerCase()}`;
-    const record: CoOwnershipProject = sanitizeForFirestore({ ...pool, id, slug });
-    const nextList = [record, ...coOwnershipProjects];
-    setCoOwnershipProjects(nextList);
-    await syncCoOwnershipToFirestore(nextList);
-  };
+  const updateService = async (updatedService: ServiceItem) => {
+    setServices((prev) => prev.map((s) => (s.id === updatedService.id ? updatedService : s)));
 
-  const updateCoOwnershipProject = async (
-    id: string,
-    updates: Partial<CoOwnershipProject>
-  ) => {
-    const nextList = coOwnershipProjects.map((item) =>
-      item.id === id ? sanitizeForFirestore({ ...item, ...updates }) : item
-    );
-    setCoOwnershipProjects(nextList);
-    await syncCoOwnershipToFirestore(nextList);
-  };
-
-  const deleteCoOwnershipProject = async (id: string) => {
-    const nextList = coOwnershipProjects.filter((item) => item.id !== id);
-    setCoOwnershipProjects(nextList);
-    await syncCoOwnershipToFirestore(nextList);
-  };
-
-  // 4. Services CRUD
-  const addService = async (newSvc: Omit<ServiceItem, 'id'>) => {
-    const id = slugify(newSvc.title) || `service-${Date.now()}`;
-    const record: ServiceItem = sanitizeForFirestore({ ...newSvc, id });
-    setServices((prev) => [...prev, record]);
     try {
-      await setDoc(doc(db, 'services', id), record);
-    } catch {}
-  };
-
-  const updateService = async (id: string, updates: Partial<ServiceItem>) => {
-    let updatedItem: ServiceItem | null = null;
-    setServices((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          updatedItem = sanitizeForFirestore({ ...item, ...updates });
-          return updatedItem;
-        }
-        return item;
-      })
-    );
-    if (updatedItem) {
-      try {
-        await setDoc(doc(db, 'services', id), updatedItem);
-      } catch {}
+      await setDoc(doc(db, 'servicesCatalog', updatedService.id), updatedService);
+    } catch (error) {
+      console.warn('Updated service locally; Firestore sync skipped or restricted:', error);
     }
   };
 
   const deleteService = async (id: string) => {
-    setServices((prev) => prev.filter((item) => item.id !== id));
+    setServices((prev) => prev.filter((s) => s.id !== id));
+
     try {
-      await deleteDoc(doc(db, 'services', id));
-    } catch {}
-  };
-
-  // 5. Enquiries CRUD
-  const addEnquiry = async (newEnq: Omit<EnquiryRecord, 'id' | 'createdAt' | 'status'>) => {
-    const id = `ENQ-${Math.floor(1000 + Math.random() * 9000)}`;
-    const record: EnquiryRecord = sanitizeForFirestore({
-      ...newEnq,
-      id,
-      createdAt: new Date().toISOString(),
-      status: 'New',
-    });
-
-    setEnquiries((prev) => [record, ...prev]);
-    try {
-      await setDoc(doc(db, 'enquiries', id), record);
-    } catch {}
-  };
-
-  const updateEnquiryStatus = async (id: string, status: EnquiryRecord['status']) => {
-    let updatedRecord: EnquiryRecord | null = null;
-    setEnquiries((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          updatedRecord = sanitizeForFirestore({ ...item, status });
-          return updatedRecord;
-        }
-        return item;
-      })
-    );
-
-    if (updatedRecord) {
-      try {
-        await setDoc(doc(db, 'enquiries', id), updatedRecord);
-      } catch {}
+      await deleteDoc(doc(db, 'servicesCatalog', id));
+    } catch (error) {
+      console.warn('Deleted service locally; Firestore sync skipped or restricted:', error);
     }
   };
 
-  const deleteEnquiry = async (id: string) => {
-    setEnquiries((prev) => prev.filter((item) => item.id !== id));
+  const addCoOwnershipAsset = async (newAsset: Omit<CoOwnershipAsset, 'id'>) => {
+    const id = `EGP-CO-${Math.floor(10 + Math.random() * 90)}`;
+    const asset: CoOwnershipAsset = { ...newAsset, id };
+    setCoOwnershipAssets((prev) => [asset, ...prev]);
+
     try {
-      await deleteDoc(doc(db, 'enquiries', id));
-    } catch {}
+      await setDoc(doc(db, 'coOwnershipCatalog', id), asset);
+    } catch (error) {
+      console.warn('Saved co-ownership asset locally; Firestore sync skipped or restricted:', error);
+    }
   };
 
-  // 6. Landing & Global CMS
-  const updateLandingConfig = async (updates: Partial<LandingPageConfig>) => {
-    const nextConfig = sanitizeForFirestore({ ...landingConfig, ...updates });
-    setLandingConfig(nextConfig);
+  const updateCoOwnershipAsset = async (updatedAsset: CoOwnershipAsset) => {
+    setCoOwnershipAssets((prev) => prev.map((a) => (a.id === updatedAsset.id ? updatedAsset : a)));
+
     try {
-      await setDoc(doc(db, 'settings', 'landingConfig'), nextConfig);
-    } catch {}
+      await setDoc(doc(db, 'coOwnershipCatalog', updatedAsset.id), updatedAsset);
+    } catch (error) {
+      console.warn('Updated co-ownership asset locally; Firestore sync skipped or restricted:', error);
+    }
   };
 
-  const resetToDefaults = async () => {
-    setProperties(PROPERTIES_DATA);
-    setDevelopments(DEVELOPMENTS_DATA);
-    setCoOwnershipProjects(CO_OWNERSHIP_PROJECTS);
-    setServices(SERVICES_DATA);
-    setEnquiries(SEED_ENQUIRIES);
-    setLandingConfig(DEFAULT_LANDING_CONFIG);
+  const deleteCoOwnershipAsset = async (id: string) => {
+    setCoOwnershipAssets((prev) => prev.filter((a) => a.id !== id));
 
-    Object.values(STORAGE_KEYS).forEach((k) => localStorage.removeItem(k));
+    try {
+      await deleteDoc(doc(db, 'coOwnershipCatalog', id));
+    } catch (error) {
+      console.warn('Deleted co-ownership asset locally; Firestore sync skipped or restricted:', error);
+    }
+  };
 
+  const updateSiteConfig = async (newConfig: SiteConfig) => {
+    setSiteConfig(newConfig);
+
+    try {
+      await setDoc(doc(db, 'siteSettings', 'main'), newConfig);
+    } catch (error) {
+      console.warn('Saved siteConfig locally; Firestore sync skipped or restricted:', error);
+    }
+  };
+
+  const addBooking = async (newBooking: Omit<InspectionBooking, 'id' | 'createdAt' | 'status'>) => {
+    const id = `INSP-${Math.floor(1000 + Math.random() * 9000)}`;
+    const createdAt = new Date().toISOString();
+    const booking: InspectionBooking = { ...newBooking, id, createdAt, status: 'Pending' };
+
+    const cleanBooking = Object.fromEntries(
+      Object.entries(booking).filter(([_, v]) => v !== undefined)
+    );
+
+    setBookings((prev) => [booking, ...prev]);
+
+    try {
+      await setDoc(doc(db, 'bookings', id), cleanBooking);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, `bookings/${id}`);
+    }
+  };
+
+  const updateBookingStatus = async (id: string, status: InspectionBooking['status']) => {
+    setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
+
+    const booking = bookings.find((b) => b.id === id);
+    if (!booking) return;
+    try {
+      await setDoc(doc(db, 'bookings', id), { ...booking, status });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `bookings/${id}`);
+    }
+  };
+
+  const addInquiry = async (newInquiry: Omit<ContactInquiry, 'id' | 'createdAt'>) => {
+    const id = `INQ-${Math.floor(1000 + Math.random() * 9000)}`;
+    const createdAt = new Date().toISOString();
+    const inquiry: ContactInquiry = { ...newInquiry, id, createdAt };
+
+    const cleanInquiry = Object.fromEntries(
+      Object.entries(inquiry).filter(([_, v]) => v !== undefined)
+    );
+
+    setInquiries((prev) => [inquiry, ...prev]);
+
+    try {
+      await setDoc(doc(db, 'inquiries', id), cleanInquiry);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, `inquiries/${id}`);
+    }
+  };
+
+  const resetDemoData = async () => {
+    setProperties(INITIAL_PROPERTIES);
+    setDevelopments(INITIAL_DEVELOPMENTS);
+    setServices(CORE_SERVICES);
+    setCoOwnershipAssets(CO_OWNERSHIP_ASSETS);
+    setSiteConfig(DEFAULT_SITE_CONFIG);
+    setBookings([]);
+    setInquiries([]);
+
+    if (!user) return;
     try {
       const batch = writeBatch(db);
-      for (const prop of PROPERTIES_DATA) {
-        batch.set(doc(db, 'properties', prop.id), sanitizeForFirestore(prop));
-      }
-      for (const dev of DEVELOPMENTS_DATA) {
-        batch.set(doc(db, 'developments', dev.id), sanitizeForFirestore(dev));
-      }
-      for (const svc of SERVICES_DATA) {
-        batch.set(doc(db, 'services', svc.id), sanitizeForFirestore(svc));
-      }
-      batch.set(
-        doc(db, 'settings', 'coOwnershipCatalog'),
-        sanitizeForFirestore({ items: CO_OWNERSHIP_PROJECTS })
-      );
-      batch.set(
-        doc(db, 'settings', 'landingConfig'),
-        sanitizeForFirestore(DEFAULT_LANDING_CONFIG)
-      );
+
+      const propsSnap = await getDocs(collection(db, 'properties'));
+      propsSnap.forEach((d) => batch.delete(d.ref));
+
+      const devsSnap = await getDocs(collection(db, 'developments'));
+      devsSnap.forEach((d) => batch.delete(d.ref));
+
+      const bksSnap = await getDocs(collection(db, 'bookings'));
+      bksSnap.forEach((d) => batch.delete(d.ref));
+
+      const inqsSnap = await getDocs(collection(db, 'inquiries'));
+      inqsSnap.forEach((d) => batch.delete(d.ref));
+
+      INITIAL_PROPERTIES.forEach((prop) => {
+        batch.set(doc(db, 'properties', prop.id), prop);
+      });
+
+      INITIAL_DEVELOPMENTS.forEach((dev) => {
+        batch.set(doc(db, 'developments', dev.id), dev);
+      });
+
       await batch.commit();
-    } catch {}
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'resetDemoData');
+    }
+  };
+
+  const openInspectionModal = (property?: { id: string; title: string }) => {
+    setSelectedPropertyForInspection(property || null);
+    setIsInspectionModalOpen(true);
+  };
+
+  const closeInspectionModal = () => {
+    setIsInspectionModalOpen(false);
+    setSelectedPropertyForInspection(null);
   };
 
   return (
@@ -631,30 +713,34 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         properties,
         developments,
-        coOwnershipProjects,
         services,
-        enquiries,
-        landingConfig,
-        testimonials,
-        firebaseUser,
-        isFirestoreConnected,
+        coOwnershipAssets,
+        siteConfig,
+        bookings,
+        inquiries,
         addProperty,
         updateProperty,
         deleteProperty,
         addDevelopment,
         updateDevelopment,
         deleteDevelopment,
-        addCoOwnershipProject,
-        updateCoOwnershipProject,
-        deleteCoOwnershipProject,
         addService,
         updateService,
         deleteService,
-        addEnquiry,
-        updateEnquiryStatus,
-        deleteEnquiry,
-        updateLandingConfig,
-        resetToDefaults,
+        addCoOwnershipAsset,
+        updateCoOwnershipAsset,
+        deleteCoOwnershipAsset,
+        updateSiteConfig,
+        addBooking,
+        updateBookingStatus,
+        addInquiry,
+        resetDemoData,
+        isInspectionModalOpen,
+        selectedPropertyForInspection,
+        openInspectionModal,
+        closeInspectionModal,
+        user,
+        isAuthReady,
       }}
     >
       {children}

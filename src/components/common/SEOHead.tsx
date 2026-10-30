@@ -5,6 +5,7 @@ import {
   resolveRouteMetadata,
   buildStructuredDataJsonLd,
   PRIMARY_DOMAIN,
+  PageSEOConfig,
 } from '../../utils/seoMetadata';
 import { formatNairaCompact } from '../../utils/formatters';
 
@@ -34,28 +35,32 @@ function upsertLinkTag(rel: string, href: string) {
   el.setAttribute('href', href);
 }
 
-export const SEOHead: React.FC = () => {
+interface SEOHeadProps {
+  config?: PageSEOConfig;
+}
+
+export const SEOHead: React.FC<SEOHeadProps> = ({ config }) => {
   const { pathname } = useLocation();
   const { properties, developments } = useData();
 
   useEffect(() => {
     const baseMeta = resolveRouteMetadata(pathname);
-    let { title, description, ogImage } = baseMeta;
+    let title = config?.title || baseMeta.title;
+    let description = config?.description || baseMeta.description;
+    let ogImage = config?.ogImage || baseMeta.ogImage;
 
-    if (pathname.startsWith('/properties/')) {
+    if (!config && pathname.startsWith('/properties/')) {
       const propId = pathname.replace('/properties/', '').trim();
       const prop = properties.find(
         (p) => p.id.toLowerCase() === propId.toLowerCase() || p.slug === propId
       );
       if (prop) {
-        title = `${prop.title} in ${prop.location} (${formatNairaCompact(
+        title = `${prop.title} in ${prop.area} (${formatNairaCompact(
           prop.price
         )}) | Etosmania Global Properties`;
         description = `${prop.bedrooms > 0 ? `${prop.bedrooms} Bed ` : ''}${
           prop.title
-        } at ${prop.address}. Verified ${prop.titleDocument}, ${
-          prop.sqm
-        } sqm. Listed at ${formatNairaCompact(
+        } at ${prop.location}. ${prop.sqm} sqm. Listed at ${formatNairaCompact(
           prop.price
         )} by Etosmania Global Properties Investment Limited.`;
         if (prop.images?.[0] && !prop.images[0].startsWith('data:')) {
@@ -64,16 +69,14 @@ export const SEOHead: React.FC = () => {
       }
     }
 
-    if (pathname.startsWith('/developments/')) {
+    if (!config && pathname.startsWith('/developments/')) {
       const devId = pathname.replace('/developments/', '').trim();
       const dev = developments.find(
-        (d) => d.id.toLowerCase() === devId.toLowerCase() || d.slug === devId
+        (d) => d.id.toLowerCase() === devId.toLowerCase()
       );
       if (dev) {
-        title = `${dev.name} (${dev.location}) – From ${formatNairaCompact(
-          dev.startingPrice
-        )} | Etosmania Global Properties`;
-        description = `${dev.name} in ${dev.location}, Lagos (${dev.status}). ${dev.tagline}. Estimated yield ${dev.yieldEstimate}.`;
+        title = `${dev.name} (${dev.location}) – From ${dev.startingPrice} | Etosmania Global Properties`;
+        description = `${dev.name} in ${dev.location}, Lagos (${dev.status}). ${dev.tagline}.`;
         if (dev.heroImage && !dev.heroImage.startsWith('data:')) {
           ogImage = dev.heroImage;
         }
@@ -83,11 +86,11 @@ export const SEOHead: React.FC = () => {
     document.title = title;
 
     upsertMetaTag('name', 'description', description);
-    upsertMetaTag('name', 'keywords', baseMeta.keywords);
+    upsertMetaTag('name', 'keywords', config?.keywords || baseMeta.keywords);
     upsertMetaTag('name', 'author', 'Etosmania Global Properties Investment Limited');
     upsertMetaTag('property', 'og:title', title);
     upsertMetaTag('property', 'og:description', description);
-    upsertMetaTag('property', 'og:type', baseMeta.ogType);
+    upsertMetaTag('property', 'og:type', config?.ogType || baseMeta.ogType);
     upsertMetaTag('property', 'og:url', baseMeta.canonicalUrl);
     upsertMetaTag('property', 'og:image', ogImage);
     upsertMetaTag('property', 'og:site_name', 'Etosmania Global Properties');
@@ -98,7 +101,7 @@ export const SEOHead: React.FC = () => {
     upsertMetaTag('name', 'twitter:image', ogImage);
     upsertMetaTag('name', 'application-name', 'Etosmania Global Properties');
     upsertMetaTag('name', 'apple-mobile-web-app-title', 'Etosmania Properties');
-    upsertMetaTag('name', 'theme-color', '#3B0764');
+    upsertMetaTag('name', 'theme-color', '#07142B');
 
     upsertLinkTag('canonical', baseMeta.canonicalUrl);
 
@@ -114,7 +117,7 @@ export const SEOHead: React.FC = () => {
       ...jsonLd,
       url: PRIMARY_DOMAIN,
     });
-  }, [pathname, properties, developments]);
+  }, [pathname, properties, developments, config]);
 
   return null;
 };

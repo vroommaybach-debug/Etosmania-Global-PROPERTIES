@@ -1,505 +1,225 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
+  Users,
   ShieldCheck,
+  TrendingUp,
   CheckCircle2,
   MessageCircle,
   Calendar,
-  ArrowRight,
-  MapPin,
-  Coins,
-  Sparkles,
+  Award,
 } from 'lucide-react';
 import { useData } from '../context/DataContext';
-import { useUI } from '../context/UIContext';
-import { PropertyCard } from '../components/property/PropertyCard';
 import { SectionHeading } from '../components/common/SectionHeading';
 import { SafeImage } from '../components/common/SafeImage';
-import { formatNairaCompact } from '../utils/formatters';
-import { getWhatsAppUrl, getCoOwnershipWhatsAppMessage } from '../utils/whatsapp';
+import { getCoOwnershipWhatsAppUrl, getWhatsAppUrl } from '../utils/whatsapp';
 
 export const CoOwnershipPage: React.FC = () => {
-  const { properties, coOwnershipProjects } = useData();
-  const { openInspectionModal } = useUI();
-
-  const [selectedSyndicateId, setSelectedSyndicateId] = useState<string>(
-    coOwnershipProjects[0]?.id || 'EGP-CO-01'
+  const { openInspectionModal, coOwnershipAssets } = useData();
+  const [selectedAssetId, setSelectedAssetId] = useState(
+    coOwnershipAssets[0]?.id || 'EGP-CO-01'
   );
-  const [slotCount, setSlotCount] = useState<number>(2);
-  const [holdYears, setHoldYears] = useState<number>(3);
-
-  const selectedProject =
-    coOwnershipProjects.find((p) => p.id === selectedSyndicateId) || coOwnershipProjects[0];
-
-  if (!selectedProject) return null;
-
-  const totalCapital = selectedProject.pricePerSlot * slotCount;
-  const ownershipSharePct = ((slotCount / selectedProject.totalSlots) * 100).toFixed(1);
-  const annualRentalDividend = Math.round(
-    totalCapital * (selectedProject.projectedAnnualYieldPct / 100)
-  );
-  const totalRentalOverHold = annualRentalDividend * holdYears;
-  const projectedAssetExitValue = Math.round(
-    totalCapital * Math.pow(1 + selectedProject.projectedCapitalGrowthPct / 100, holdYears)
-  );
-  const totalProjectedWealth = projectedAssetExitValue + totalRentalOverHold;
-  const netGain = totalProjectedWealth - totalCapital;
-
-  const coOwnEligibleProperties = properties.filter((p) => p.coOwnershipEligible);
-
-  const simulatorWhatsAppUrl = getWhatsAppUrl(
-    getCoOwnershipWhatsAppMessage({
-      projectTitle: selectedProject.title,
-      slots: slotCount,
-      investmentAmount: formatNairaCompact(totalCapital),
-      projectedReturn: formatNairaCompact(totalProjectedWealth),
-    })
-  );
+  const [slots, setSlots] = useState(2);
 
   return (
-    <div className="bg-[#FAF9FC] min-h-screen pt-24 pb-20">
+    <div className="min-h-screen bg-[#F8FAFC] pb-24">
       {/* Hero Banner */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#120721] via-[#2E1065] to-[#3B0764] text-white py-16 sm:py-24 border-b border-[#D4AF37]/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-            <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-white/10 border border-[#D4AF37]/40 text-xs font-mono uppercase tracking-[0.2em] text-[#F59E0B]">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Fractional Wealth · Etosmania Core Pillar</span>
-              </div>
-
-              <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08]">
-                Real Estate <span className="text-[#F59E0B]">Co-Ownership</span> &amp; Fractional Equity
-              </h1>
-
-              <p className="text-base sm:text-lg text-purple-100/90 leading-relaxed max-w-2xl">
-                Co-own verified duplexes in Thomas Estate Ajah, corporate short-lets in Lekki Phase
-                1, commercial suites in Victoria Island, or C of O land banks in Ibeju-Lekki—backed
-                by registered SPV Deeds and audited dividend payouts.
-              </p>
-
-              <div className="flex flex-wrap items-center gap-3.5 pt-2">
-                <a
-                  href="#co-ownership-simulator"
-                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#F59E0B] text-[#120721] font-bold text-xs uppercase tracking-wider shadow-lg hover:opacity-95 transition-all whitespace-nowrap"
-                >
-                  <Coins className="w-4 h-4" />
-                  <span>Calculate Co-Ownership Dividend</span>
-                </a>
-                <a
-                  href={simulatorWhatsAppUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs uppercase tracking-wider transition-all whitespace-nowrap"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Reserve Slot on WhatsApp</span>
-                </a>
-              </div>
+      <section className="bg-[#07142B] text-white py-16 lg:py-24 border-b-4 border-[#FACC15]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl space-y-5">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-[#FACC15] text-[#07142B] font-extrabold text-xs uppercase tracking-widest">
+              <Users className="w-3.5 h-3.5" />
+              <span>Etosmania Fractional Wealth Hub</span>
             </div>
-
-            <div className="lg:col-span-5">
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-[#D4AF37]/40 space-y-6">
-                <div className="flex items-center justify-between border-b border-white/15 pb-4">
-                  <div>
-                    <span className="text-[11px] font-mono uppercase tracking-widest text-[#F59E0B] block">
-                      Entry Threshold
-                    </span>
-                    <p className="font-mono text-3xl font-bold text-white">From ₦5,000,000</p>
-                  </div>
-                  <span className="px-3 py-1 rounded bg-[#D4AF37] text-[#120721] font-mono text-xs font-bold uppercase">
-                    SPV Protected
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl bg-[#120721]/60 border border-purple-700/40">
-                    <span className="text-[11px] font-mono uppercase text-purple-300 block">
-                      Target Rental Yield
-                    </span>
-                    <p className="font-mono text-2xl font-bold text-[#F59E0B] mt-1">16.5% – 21.8%</p>
-                    <span className="text-[11px] text-purple-200/75">Per Annum Cashflow</span>
-                  </div>
-                  <div className="p-4 rounded-xl bg-[#120721]/60 border border-purple-700/40">
-                    <span className="text-[11px] font-mono uppercase text-purple-300 block">
-                      Capital Growth
-                    </span>
-                    <p className="font-mono text-2xl font-bold text-emerald-400 mt-1">20% – 38.5%</p>
-                    <span className="text-[11px] text-purple-200/75">Annual Appreciation</span>
-                  </div>
-                </div>
-
-                <ul className="space-y-2.5 text-xs text-purple-100">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#F59E0B] shrink-0" />
-                    <span>Registered Deed of Co-Ownership &amp; Fractional Title Certificate</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#F59E0B] shrink-0" />
-                    <span>100% Managed by Etosmania Property Management Division</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#F59E0B] shrink-0" />
-                    <span>Structured Secondary Slot Resale or Buy-Back Exit Window</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Interactive Co-Ownership Slot & Dividend Simulator */}
-      <section id="co-ownership-simulator" className="py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <SectionHeading
-          subtitle="Interactive Wealth Calculator"
-          title="Simulate Your Co-Ownership Equity & Dividend Payouts"
-          description="Select one of our active Lagos co-ownership syndicates, choose the number of slots you wish to acquire, and preview your projected rental income and capital growth."
-        />
-
-        <div className="mt-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          <div className="lg:col-span-7 bg-white rounded-2xl p-6 sm:p-8 border border-purple-100 shadow-md space-y-6">
-            <div>
-              <label className="block text-xs font-mono uppercase tracking-wider text-[#4C1D95] font-semibold mb-3">
-                1. Choose Active Co-Ownership Pool
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {coOwnershipProjects.map((pool) => {
-                  const active = pool.id === selectedProject.id;
-                  return (
-                    <button
-                      key={pool.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedSyndicateId(pool.id);
-                        setSlotCount(1);
-                        setHoldYears(pool.holdPeriodYears);
-                      }}
-                      className={`text-left p-4 rounded-xl border transition-all cursor-pointer ${
-                        active
-                          ? 'bg-[#2E1065] text-white border-[#D4AF37] shadow-md'
-                          : 'bg-[#FAF9FC] text-[#120721] border-purple-100 hover:border-purple-300'
-                      }`}
-                    >
-                      <span
-                        className={`text-[10px] font-mono uppercase tracking-wider block ${
-                          active ? 'text-[#F59E0B]' : 'text-[#5B21B6]'
-                        }`}
-                      >
-                        {pool.assetType}
-                      </span>
-                      <p className="font-serif font-bold text-sm mt-0.5 line-clamp-1">
-                        {pool.title}
-                      </p>
-                      <p
-                        className={`font-mono text-xs mt-1.5 font-semibold ${
-                          active ? 'text-purple-200' : 'text-slate-600'
-                        }`}
-                      >
-                        {formatNairaCompact(pool.pricePerSlot)} / slot · {pool.availableSlots} slots left
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="pt-2">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-mono uppercase tracking-wider text-[#4C1D95] font-semibold">
-                  2. Number of Slots to Acquire
-                </label>
-                <span className="font-mono text-sm font-bold text-[#3B0764] bg-purple-100 px-3 py-1 rounded-md">
-                  {slotCount} {slotCount === 1 ? 'Slot' : 'Slots'} ({ownershipSharePct}% Equity)
-                </span>
-              </div>
-              <input
-                type="range"
-                min={1}
-                max={Math.max(1, Math.min(10, selectedProject.availableSlots))}
-                value={slotCount}
-                onChange={(e) => setSlotCount(Number(e.target.value))}
-                className="w-full accent-[#4C1D95] cursor-pointer"
-              />
-            </div>
-
-            <div className="pt-2">
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-mono uppercase tracking-wider text-[#4C1D95] font-semibold">
-                  3. Investment Holding Horizon
-                </label>
-                <span className="font-mono text-sm font-bold text-[#3B0764] bg-purple-100 px-3 py-1 rounded-md">
-                  {holdYears} {holdYears === 1 ? 'Year' : 'Years'}
-                </span>
-              </div>
-              <input
-                type="range"
-                min={1}
-                max={7}
-                value={holdYears}
-                onChange={(e) => setHoldYears(Number(e.target.value))}
-                className="w-full accent-[#D4AF37] cursor-pointer"
-              />
-            </div>
-
-            <div className="p-4 rounded-xl bg-purple-50/80 border border-purple-100 flex items-start gap-3">
-              <ShieldCheck className="w-5 h-5 text-[#4C1D95] shrink-0 mt-0.5" />
-              <div className="text-xs text-slate-700 leading-relaxed">
-                <strong className="text-[#120721] block mb-0.5">
-                  Legal Instrument: {selectedProject.legalStructure}
-                </strong>
-                Root of Title: <strong>{selectedProject.titleDocument}</strong>. Payout Schedule:{' '}
-                <strong>{selectedProject.payoutFrequency}</strong>.
-              </div>
-            </div>
-          </div>
-
-          <div className="lg:col-span-5 bg-gradient-to-br from-[#18062C] via-[#2E1065] to-[#120721] text-white rounded-2xl p-6 sm:p-8 border border-[#D4AF37]/50 shadow-xl space-y-6">
-            <div className="border-b border-white/15 pb-4">
-              <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#F59E0B] block">
-                Projected Co-Ownership Ledger
-              </span>
-              <h3 className="font-serif text-xl font-bold mt-1">{selectedProject.title}</h3>
-              <p className="text-xs text-purple-200 mt-0.5">{selectedProject.address}</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                <span className="text-[11px] font-mono uppercase text-purple-300 block">
-                  Your Capital Commitment
-                </span>
-                <p className="font-mono text-2xl font-bold text-white mt-1">
-                  {formatNairaCompact(totalCapital)}
-                </p>
-                <span className="text-[11px] text-purple-300">
-                  {slotCount} × {formatNairaCompact(selectedProject.pricePerSlot)}
-                </span>
-              </div>
-              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                <span className="text-[11px] font-mono uppercase text-purple-300 block">
-                  Annual Cash Dividend
-                </span>
-                <p className="font-mono text-2xl font-bold text-[#F59E0B] mt-1">
-                  {selectedProject.projectedAnnualYieldPct > 0
-                    ? formatNairaCompact(annualRentalDividend)
-                    : 'Capital Growth Pool'}
-                </p>
-                <span className="text-[11px] text-purple-300">
-                  {selectedProject.projectedAnnualYieldPct}% p.a. ({selectedProject.payoutFrequency})
-                </span>
-              </div>
-            </div>
-
-            <div className="p-5 rounded-xl bg-[#120721]/90 border border-[#D4AF37]/40 space-y-3">
-              <div className="flex items-center justify-between text-xs text-purple-200">
-                <span>Cumulative Rental Payouts ({holdYears} yrs)</span>
-                <span className="font-mono font-semibold text-white">
-                  {formatNairaCompact(totalRentalOverHold)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-xs text-purple-200">
-                <span>
-                  Projected Equity Value ({selectedProject.projectedCapitalGrowthPct}% p.a.)
-                </span>
-                <span className="font-mono font-semibold text-white">
-                  {formatNairaCompact(projectedAssetExitValue)}
-                </span>
-              </div>
-              <div className="pt-3 border-t border-white/15 flex items-baseline justify-between">
-                <div>
-                  <span className="text-[11px] font-mono uppercase tracking-wider text-[#F59E0B] block">
-                    Total Projected Wealth Value
-                  </span>
-                  <span className="text-xs text-emerald-400 font-mono">
-                    Net Gain: +{formatNairaCompact(netGain)}
-                  </span>
-                </div>
-                <span className="font-mono text-2xl sm:text-3xl font-extrabold text-[#F59E0B]">
-                  {formatNairaCompact(totalProjectedWealth)}
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-2.5">
+            <h1 className="font-serif-luxury text-4xl sm:text-6xl font-bold tracking-tight leading-[1.06]">
+              Real Estate Co-Ownership: Own Prime Lagos Assets Together.
+            </h1>
+            <p className="text-blue-100/90 text-base sm:text-lg leading-relaxed">
+              Co-invest in high-yield short-let residences, executive apartments, and commercial land across Ajah, Lekki, Egbeda, and Akowonjo without needing 100% of the capital upfront. Backed by registered trust deeds, C of O titles, and audited rental dividends.
+            </p>
+            <div className="flex flex-wrap gap-3 pt-2">
               <a
-                href={simulatorWhatsAppUrl}
+                href={getWhatsAppUrl(
+                  'Hello Etosmania Global Properties, I would like to receive the Co-Ownership Syndicate Prospectus.'
+                )}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-5 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#F59E0B] text-[#120721] font-bold text-xs uppercase tracking-wider shadow-lg hover:opacity-95 transition-all"
+                className="inline-flex items-center gap-2 px-6 py-4 rounded-xl bg-[#25D366] hover:bg-[#20BD5A] text-white font-bold text-xs uppercase tracking-wider shadow-lg"
               >
-                <MessageCircle className="w-4 h-4" />
-                <span>Reserve {slotCount} {slotCount === 1 ? 'Slot' : 'Slots'} on WhatsApp</span>
+                <MessageCircle className="w-4 h-4 fill-white" />
+                <span>Request Co-Ownership Prospectus</span>
               </a>
               <button
-                type="button"
                 onClick={() =>
                   openInspectionModal({
-                    title: `${selectedProject.title} (${slotCount} Co-Ownership Slots)`,
-                    location: selectedProject.location,
-                    id: selectedProject.id,
+                    id: 'CO-OWNERSHIP',
+                    title: 'Real Estate Co-Ownership Briefing',
                   })
                 }
-                className="w-full inline-flex items-center justify-center gap-2 py-3 px-5 rounded-lg bg-white/10 hover:bg-white/15 text-white border border-white/20 text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-6 py-4 rounded-xl bg-[#FACC15] hover:bg-[#EAB308] text-[#07142B] font-extrabold text-xs uppercase tracking-wider cursor-pointer"
               >
-                <Calendar className="w-4 h-4 text-[#F59E0B]" />
-                <span>Book Co-Ownership Deed Review</span>
+                <Calendar className="w-4 h-4 text-[#07142B]" />
+                <span>Book Co-Ownership Briefing</span>
               </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Active Co-Ownership Syndicate Cards */}
-      <section className="py-16 bg-white border-y border-purple-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionHeading
-            subtitle="Open Co-Ownership Syndicates"
-            title="Verified Lagos Assets Open for Fractional Subscription"
-            description="Every pool is backed by physical brick-and-mortar property or C of O land charted by Etosmania Global Properties."
-          />
+      {/* Active Co-Ownership Pools */}
+      <section className="py-16 lg:py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <SectionHeading
+          subtitle="Open Syndicates"
+          title="Current Co-Ownership Property Pools."
+          description="Select your preferred asset pool across Ajah, Lekki, Akowonjo, or Egbeda, choose the number of fractional slots you wish to acquire, and reserve directly with our investment desk."
+        />
 
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
-            {coOwnershipProjects.map((pool) => {
-              const progressPct = Math.round(
-                ((pool.totalSlots - pool.availableSlots) / pool.totalSlots) * 100
-              );
-              const poolWhatsApp = getWhatsAppUrl(
-                getCoOwnershipWhatsAppMessage({
-                  projectTitle: pool.title,
-                  slots: 1,
-                  investmentAmount: formatNairaCompact(pool.pricePerSlot),
-                })
-              );
+        <div className="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {coOwnershipAssets.map((asset) => {
+            const progressPercent = Math.round(
+              ((asset.totalSlots - asset.availableSlots) / asset.totalSlots) * 100
+            );
 
-              return (
-                <article
-                  key={pool.id}
-                  className="bg-[#FAF9FC] rounded-2xl overflow-hidden border border-purple-100 hover:border-[#D4AF37] shadow-sm hover:shadow-xl transition-all flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="relative h-64 overflow-hidden bg-[#18062C]">
-                      <SafeImage
-                        src={pool.image}
-                        alt={pool.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#120721]/90 via-[#120721]/30 to-transparent" />
-                      <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
-                        <span className="px-3 py-1 rounded bg-[#18062C]/90 text-[#F59E0B] border border-[#D4AF37]/40 text-xs font-mono font-semibold">
-                          {pool.assetType}
-                        </span>
-                        <span className="px-3 py-1 rounded bg-emerald-700/90 text-white text-xs font-mono font-semibold">
-                          {pool.availableSlots} of {pool.totalSlots} Slots Open
-                        </span>
-                      </div>
-                      <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between text-white">
-                        <div>
-                          <span className="text-[10px] font-mono uppercase tracking-widest text-purple-200 block">
-                            Price Per Co-Ownership Slot
-                          </span>
-                          <p className="font-mono text-2xl font-bold text-[#F59E0B]">
-                            {formatNairaCompact(pool.pricePerSlot)}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[10px] font-mono uppercase text-purple-200 block">
-                            Total Asset Valuation
-                          </span>
-                          <p className="font-mono text-sm font-semibold">
-                            {formatNairaCompact(pool.totalValuation)}
-                          </p>
-                        </div>
-                      </div>
+            return (
+              <div
+                key={asset.id}
+                className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-lg hover:shadow-2xl hover:border-[#0A1D42]/40 transition-all flex flex-col justify-between"
+              >
+                <div>
+                  <div className="relative aspect-[16/10] bg-slate-100">
+                    <SafeImage
+                      src={asset.image}
+                      alt={asset.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-3 left-3">
+                      <span className="px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-[#07142B] text-[#FACC15] border border-[#FACC15]/40">
+                        {asset.status}
+                      </span>
                     </div>
-
-                    <div className="p-6 space-y-4">
-                      <div className="flex items-center justify-between text-xs font-mono text-slate-500">
-                        <span className="inline-flex items-center gap-1 text-[#4C1D95] font-semibold">
-                          <MapPin className="w-3.5 h-3.5 text-[#D4AF37]" />
-                          {pool.address}
-                        </span>
-                        <span>{pool.titleDocument}</span>
+                    <div className="absolute bottom-3 left-3 right-3 bg-[#07142B]/95 backdrop-blur-xs p-3 rounded-xl text-white flex items-center justify-between border border-white/15">
+                      <div>
+                        <p className="text-[10px] uppercase text-[#FACC15] font-mono-tech">
+                          Price Per Slot
+                        </p>
+                        <p className="font-mono-tech text-lg font-bold">{asset.pricePerSlot}</p>
                       </div>
-
-                      <h3 className="font-serif text-2xl font-bold text-[#120721]">{pool.title}</h3>
-                      <p className="text-sm text-slate-600 leading-relaxed">{pool.summary}</p>
-
-                      <div className="space-y-1.5 pt-1">
-                        <div className="flex justify-between text-xs font-mono">
-                          <span className="text-slate-600">Syndicate Subscription Status</span>
-                          <span className="font-bold text-[#3B0764]">{progressPct}% Subscribed</span>
-                        </div>
-                        <div className="w-full h-2 rounded-full bg-purple-100 overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-[#3B0764] to-[#D4AF37]"
-                            style={{ width: `${progressPct}%` }}
-                          />
-                        </div>
+                      <div className="text-right">
+                        <p className="text-[10px] uppercase text-blue-200/70 font-mono-tech">
+                          Asset Valuation
+                        </p>
+                        <p className="font-mono-tech text-sm font-semibold">{asset.totalValue}</p>
                       </div>
-
-                      <ul className="space-y-1.5 pt-2">
-                        {pool.highlights.map((item, idx) => (
-                          <li key={idx} className="flex items-start gap-2 text-xs text-slate-700">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-[#4C1D95] shrink-0 mt-0.5" />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
                     </div>
                   </div>
 
-                  <div className="p-6 pt-0 flex flex-wrap items-center gap-3">
-                    <a
-                      href={poolWhatsApp}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 inline-flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-[#3B0764] hover:bg-[#4C1D95] text-white text-xs font-bold uppercase tracking-wider transition-colors whitespace-nowrap"
-                    >
-                      <MessageCircle className="w-4 h-4 text-[#F59E0B]" />
-                      <span>Subscribe via WhatsApp</span>
-                    </a>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        openInspectionModal({
-                          title: `Co-Ownership: ${pool.title}`,
-                          location: pool.location,
-                          id: pool.id,
-                        })
-                      }
-                      className="py-3 px-4 rounded-lg border border-purple-200 hover:border-[#D4AF37] text-[#2E1065] text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer whitespace-nowrap"
-                    >
-                      Inspect Asset
-                    </button>
+                  <div className="p-6 space-y-4">
+                    <div>
+                      <p className="text-xs font-semibold text-[#0A1D42]">{asset.location}</p>
+                      <h3 className="font-serif-luxury text-xl font-bold text-[#07142B] mt-1">
+                        {asset.title}
+                      </h3>
+                    </div>
+
+                    {/* Subscription Progress Bar */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-xs font-mono-tech">
+                        <span className="text-slate-500">{progressPercent}% Subscribed</span>
+                        <span className="font-bold text-[#0A1D42]">
+                          {asset.availableSlots} of {asset.totalSlots} Slots Left
+                        </span>
+                      </div>
+                      <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-[#0A1D42] to-[#FACC15]"
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-[#F8FAFC] border border-slate-200/70 text-xs">
+                      <div>
+                        <p className="text-[10px] uppercase text-slate-400">Projected Return</p>
+                        <p className="font-bold text-emerald-700 mt-0.5">{asset.projectedYield}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] uppercase text-slate-400">Hold Horizon</p>
+                        <p className="font-bold text-[#07142B] mt-0.5">{asset.minimumHold}</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 pt-1">
+                      {asset.highlights.map((hl, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs text-slate-600">
+                          <CheckCircle2 className="w-4 h-4 text-[#0A1D42] shrink-0 mt-0.5" />
+                          <span>{hl}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </article>
-              );
-            })}
+                </div>
+
+                <div className="p-6 pt-0">
+                  <a
+                    href={getCoOwnershipWhatsAppUrl({
+                      title: asset.title,
+                      slots: 1,
+                      pricePerSlot: asset.pricePerSlot,
+                    })}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      setSelectedAssetId(asset.id);
+                      setSlots(1);
+                    }}
+                    className="w-full py-3.5 px-4 rounded-xl bg-[#0A1D42] hover:bg-[#07142B] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md transition-all"
+                  >
+                    <MessageCircle className="w-4 h-4 text-[#FACC15]" />
+                    <span>Subscribe to Slot on WhatsApp</span>
+                  </a>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* How Legal Protection Works */}
+        <div className="mt-16 bg-white rounded-3xl p-8 sm:p-10 border border-slate-200 shadow-md">
+          <h3 className="font-serif-luxury text-2xl font-bold text-[#07142B] mb-6">
+            How Your Co-Ownership Equity Is Legally Protected
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-5 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 space-y-2">
+              <ShieldCheck className="w-7 h-7 text-[#0A1D42]" />
+              <h4 className="font-bold text-base text-[#07142B]">
+                1. Registered Co-Ownership Deed
+              </h4>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Every slot subscriber receives a legally executed Deed of Co-Ownership and Slot
+                Allocation Certificate specifying their exact percentage equity in the underlying
+                property.
+              </p>
+            </div>
+            <div className="p-5 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 space-y-2">
+              <TrendingUp className="w-7 h-7 text-[#EAB308]" />
+              <h4 className="font-bold text-base text-[#07142B]">
+                2. Audited Rental Distributions
+              </h4>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Our in-house Property Management team manages tenants, power, and maintenance,
+                distributing net rental income directly to co-owners’ bank accounts.
+              </p>
+            </div>
+            <div className="p-5 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 space-y-2">
+              <Award className="w-7 h-7 text-[#0A1D42]" />
+              <h4 className="font-bold text-base text-[#07142B]">
+                3. Seamless Slot Transfer &amp; Exit
+              </h4>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Need liquidity? You can resell your slot to existing pool members or through
+                Etosmania’s secondary investor desk at current market valuation.
+              </p>
+            </div>
           </div>
-        </div>
-      </section>
-
-      {/* Individual Properties Eligible for Co-Ownership */}
-      <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
-          <SectionHeading
-            subtitle="Direct Property Co-Ownership"
-            title="Individual Listings Eligible for Fractional Acquisition"
-            description="Browse eligible duplexes, commercial buildings, and land plots below."
-          />
-          <Link
-            to="/properties"
-            className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#3B0764] hover:text-[#4C1D95] shrink-0"
-          >
-            <span>View All Listings</span>
-            <ArrowRight className="w-4 h-4 text-[#D4AF37]" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {coOwnEligibleProperties.slice(0, 6).map((property) => (
-            <PropertyCard key={property.id} property={property} />
-          ))}
         </div>
       </section>
     </div>

@@ -1,56 +1,47 @@
 import React from 'react';
 
 interface SectionHeadingProps {
-  subtitle?: string;
+  subtitle: string;
   title: string;
   description?: string;
-  align?: 'left' | 'center';
+  alignment?: 'left' | 'center';
   light?: boolean;
-  className?: string;
 }
 
 export const SectionHeading: React.FC<SectionHeadingProps> = ({
   subtitle,
   title,
   description,
-  align = 'left',
+  alignment = 'left',
   light = false,
-  className = '',
 }) => {
+  const isCenter = alignment === 'center';
+
   return (
-    <div
-      className={`max-w-3xl ${
-        align === 'center' ? 'mx-auto text-center' : 'text-left'
-      } ${className}`}
-    >
-      {subtitle && (
-        <div
-          className={`inline-flex items-center gap-2.5 mb-3 ${
-            align === 'center' ? 'justify-center' : 'justify-start'
-          }`}
-        >
-          <span className="w-6 h-0.5 bg-[#D4AF37] rounded-full" />
-          <span
-            className={`text-xs font-mono uppercase tracking-[0.22em] font-semibold ${
-              light ? 'text-[#F59E0B]' : 'text-[#5B21B6]'
-            }`}
-          >
-            {subtitle}
-          </span>
-          {align === 'center' && <span className="w-6 h-0.5 bg-[#D4AF37] rounded-full" />}
-        </div>
-      )}
+    <div className={`max-w-3xl ${isCenter ? 'mx-auto text-center' : ''}`}>
+      <div
+        className={`inline-flex items-center gap-2 px-3 py-1 rounded-md text-xs font-bold uppercase tracking-[0.2em] mb-4 ${
+          light
+            ? 'bg-[#FACC15]/15 text-[#FACC15] border border-[#FACC15]/40'
+            : 'bg-[#0A1D42] text-[#FACC15] border border-[#0A1D42]'
+        }`}
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-[#FACC15]" />
+        <span>{subtitle}</span>
+      </div>
+
       <h2
-        className={`font-serif text-3xl sm:text-4xl lg:text-[42px] font-bold tracking-tight leading-[1.12] ${
-          light ? 'text-white' : 'text-[#120721]'
+        className={`font-serif-luxury text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-[1.12] ${
+          light ? 'text-white' : 'text-[#07142B]'
         }`}
       >
         {title}
       </h2>
+
       {description && (
         <p
           className={`mt-4 text-base sm:text-lg leading-relaxed ${
-            light ? 'text-purple-100/80' : 'text-slate-600'
+            light ? 'text-blue-100/85' : 'text-slate-600'
           }`}
         >
           {description}

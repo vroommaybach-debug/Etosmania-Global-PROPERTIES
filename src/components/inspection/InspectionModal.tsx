@@ -1,185 +1,156 @@
 import React, { useState } from 'react';
-import {
-  X,
-  Calendar,
-  Video,
-  MapPin,
-  CheckCircle2,
-  MessageCircle,
-  ShieldCheck,
-} from 'lucide-react';
-import { useUI } from '../../context/UIContext';
+import { X, Calendar, Clock, Video, MapPin, Users, CheckCircle2, MessageCircle } from 'lucide-react';
 import { useData } from '../../context/DataContext';
-import { getWhatsAppUrl, getInspectionWhatsAppMessage } from '../../utils/whatsapp';
-import { OFFICE_DETAILS } from '../../data/mockData';
+import { getInspectionWhatsAppUrl } from '../../utils/whatsapp';
 
 export const InspectionModal: React.FC = () => {
-  const { isModalOpen, closeInspectionModal, inspectionProperty } = useUI();
-  const { addEnquiry } = useData();
+  const { isInspectionModalOpen, closeInspectionModal, selectedPropertyForInspection, addBooking } =
+    useData();
 
-  const [mode, setMode] = useState<'in-person' | 'video'>('in-person');
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [clientName, setClientName] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
   const [preferredDate, setPreferredDate] = useState('');
-  const [preferredTime, setPreferredTime] = useState('11:00 AM (WAT)');
+  const [preferredTime, setPreferredTime] = useState('11:00 AM');
+  const [inspectionType, setInspectionType] = useState<
+    'In-Person' | 'Virtual Video Tour' | 'Co-Ownership Briefing'
+  >('In-Person');
   const [notes, setNotes] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  if (!isModalOpen) return null;
+  if (!isInspectionModalOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addEnquiry({
-      type: 'Inspection',
-      name: fullName,
-      email,
-      phone,
-      subject: inspectionProperty
-        ? `Inspection Request: ${inspectionProperty.title}`
-        : 'Private Property / Land Inspection Request',
-      message:
-        notes ||
-        `Requested ${
-          mode === 'in-person'
-            ? 'In-Person Viewing (10B Thomas Estate, Ajah)'
-            : 'Live 4K WhatsApp Video Tour'
-        } on ${preferredDate} at ${preferredTime}.`,
-      meta: {
-        mode: mode === 'in-person' ? 'In-Person Viewing' : 'Live Video Tour',
-        date: preferredDate,
-        time: preferredTime,
-        propertyId: inspectionProperty?.id || 'Portfolio Consultation',
-      },
+    await addBooking({
+      propertyId: selectedPropertyForInspection?.id,
+      propertyTitle:
+        selectedPropertyForInspection?.title || 'General Portfolio / Office Consultation',
+      clientName,
+      clientEmail,
+      clientPhone,
+      preferredDate,
+      preferredTime,
+      inspectionType,
+      notes,
     });
     setSubmitted(true);
   };
 
-  const resetAndClose = () => {
+  const handleResetAndClose = () => {
     setSubmitted(false);
-    setFullName('');
-    setEmail('');
-    setPhone('');
+    setClientName('');
+    setClientEmail('');
+    setClientPhone('');
     setPreferredDate('');
     setNotes('');
     closeInspectionModal();
   };
 
-  const whatsappDirectUrl = getWhatsAppUrl(
-    getInspectionWhatsAppMessage({
-      name: fullName || 'Prospective Client',
-      mode: mode === 'in-person' ? 'In-Person Physical Inspection' : 'Live 4K WhatsApp Video Tour',
-      date: preferredDate || 'Flexible Date',
-      time: preferredTime,
-      propertyTitle: inspectionProperty?.title,
-      notes,
-    })
-  );
+  const whatsappConfirmUrl = getInspectionWhatsAppUrl({
+    clientName: clientName || 'Prospective Client',
+    propertyTitle:
+      selectedPropertyForInspection?.title || 'Etosmania Verified Property / Land',
+    preferredDate: preferredDate || 'Flexible Date',
+    inspectionType,
+  });
 
   return (
-    <div
-      className="fixed inset-0 z-[90] flex items-center justify-center p-4 overflow-y-auto"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="inspection-modal-title"
-    >
-      <div
-        className="fixed inset-0 bg-[#120721]/80 backdrop-blur-sm transition-opacity"
-        onClick={resetAndClose}
-      />
-
-      <div className="relative z-10 w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-purple-200 overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#07142B]/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-[#FACC15]/40">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#2E1065] via-[#3B0764] to-[#1E0938] px-6 py-5 text-white flex items-start justify-between gap-4 border-b border-[#D4AF37]/30">
-          <div>
-            <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#F59E0B] block mb-1">
-              Private Viewing Concierge
-            </span>
-            <h3 id="inspection-modal-title" className="font-serif text-xl sm:text-2xl font-bold">
-              {inspectionProperty ? 'Schedule Property Viewing' : 'Book Site Inspection or Consultation'}
-            </h3>
-            {inspectionProperty && (
-              <p className="text-xs text-purple-200 mt-1 line-clamp-1">
-                Mandate: <strong className="text-[#F59E0B]">{inspectionProperty.title}</strong> ({inspectionProperty.location})
-              </p>
-            )}
-          </div>
+        <div className="bg-gradient-to-r from-[#07142B] via-[#0A1D42] to-[#0F295A] p-6 text-white relative">
           <button
-            type="button"
-            onClick={resetAndClose}
+            onClick={handleResetAndClose}
+            className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
             aria-label="Close modal"
-            className="p-2 rounded-lg bg-white/10 text-purple-200 hover:text-white hover:bg-white/20 transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
+
+          <span className="inline-block text-[10px] font-mono-tech uppercase tracking-widest px-2.5 py-1 rounded bg-[#FACC15] text-[#07142B] font-bold mb-2">
+            Etosmania Concierge Desk
+          </span>
+          <h3 className="font-serif-luxury text-2xl font-bold">
+            Schedule Site or Video Inspection
+          </h3>
+          <p className="text-xs text-blue-100/80 mt-1">
+            {selectedPropertyForInspection?.title
+              ? `Property: ${selectedPropertyForInspection.title}`
+              : '10b Thomas Estate, Ajah • Lekki • Egbeda • Akowonjo • Agbara'}
+          </p>
         </div>
 
         {submitted ? (
           <div className="p-8 text-center space-y-5">
-            <div className="w-16 h-16 rounded-full bg-purple-100 text-[#3B0764] flex items-center justify-center mx-auto border border-[#D4AF37]">
-              <CheckCircle2 className="w-8 h-8 text-[#D4AF37]" />
+            <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200">
+              <CheckCircle2 className="w-9 h-9" />
             </div>
-            <h4 className="font-serif text-2xl font-bold text-[#120721]">
-              Inspection Request Logged
-            </h4>
-            <p className="text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
-              Thank you, <strong>{fullName}</strong>. Our acquisitions team at{' '}
-              <strong>10B Thomas Estate, Ajah, Lekki</strong> has received your booking for{' '}
-              <strong>{preferredDate || 'your preferred date'}</strong> at <strong>{preferredTime}</strong>.
-            </p>
-            <div className="p-4 rounded-xl bg-purple-50 border border-purple-100 text-xs text-slate-700">
-              For instant priority confirmation with our duty officer, launch WhatsApp below.
+            <div className="space-y-2">
+              <h4 className="font-serif-luxury text-2xl font-bold text-[#07142B]">
+                Inspection Request Logged!
+              </h4>
+              <p className="text-sm text-slate-600 max-w-md mx-auto">
+                Your inspection booking for{' '}
+                <strong className="text-[#0A1D42]">{preferredDate}</strong> ({inspectionType}) has
+                been saved. Click below to notify our field officer on WhatsApp for instant
+                gate-pass confirmation.
+              </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+
+            <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
               <a
-                href={whatsappDirectUrl}
+                href={whatsappConfirmUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider transition-colors"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#25D366] hover:bg-[#20BD5A] text-white font-bold text-sm shadow-lg"
               >
-                <MessageCircle className="w-4 h-4" />
-                <span>Confirm Instantly on WhatsApp</span>
+                <MessageCircle className="w-4 h-4 fill-white" />
+                <span>Instant WhatsApp Confirmation</span>
               </a>
               <button
-                type="button"
-                onClick={resetAndClose}
-                className="px-6 py-3 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold uppercase tracking-wider hover:bg-slate-50 cursor-pointer"
+                onClick={handleResetAndClose}
+                className="px-5 py-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm"
               >
                 Done
               </button>
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
-            {/* Mode Toggle */}
-            <div className="grid grid-cols-2 gap-3 p-1 bg-purple-50 rounded-xl border border-purple-100">
-              <button
-                type="button"
-                onClick={() => setMode('in-person')}
-                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  mode === 'in-person'
-                    ? 'bg-[#3B0764] text-white shadow-sm'
-                    : 'text-slate-600 hover:text-[#3B0764]'
-                }`}
-              >
-                <MapPin className="w-3.5 h-3.5 text-[#F59E0B]" />
-                <span>Physical Viewing (Lagos)</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('video')}
-                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  mode === 'video'
-                    ? 'bg-[#3B0764] text-white shadow-sm'
-                    : 'text-slate-600 hover:text-[#3B0764]'
-                }`}
-              >
-                <Video className="w-3.5 h-3.5 text-[#F59E0B]" />
-                <span>Live Video Tour (Diaspora)</span>
-              </button>
+          <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+            {/* Inspection Format Selector */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+                Select Inspection Format
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'In-Person', label: 'Physical Visit', icon: MapPin },
+                  { id: 'Virtual Video Tour', label: 'Live Video Tour', icon: Video },
+                  { id: 'Co-Ownership Briefing', label: 'Co-Own Briefing', icon: Users },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  const active = inspectionType === tab.id;
+                  return (
+                    <button
+                      type="button"
+                      key={tab.id}
+                      onClick={() => setInspectionType(tab.id as typeof inspectionType)}
+                      className={`p-2.5 rounded-xl border text-center flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                        active
+                          ? 'bg-[#0A1D42] text-white border-[#0A1D42] shadow-sm'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-blue-50/50'
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 ${active ? 'text-[#FACC15]' : 'text-[#0A1D42]'}`} />
+                      <span className="text-[11px] font-bold">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Full Name *
@@ -187,43 +158,45 @@ export const InspectionModal: React.FC = () => {
                 <input
                   type="text"
                   required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Your full name"
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#4C1D95]"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  placeholder="e.g. Chief / Mrs. Adewale"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#0A1D42]"
                 />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Your Phone / WhatsApp *
+                  WhatsApp / Phone Number *
                 </label>
                 <input
                   type="tel"
                   required
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Enter your contact number"
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#4C1D95]"
+                  value={clientPhone}
+                  onChange={(e) => setClientPhone(e.target.value)}
+                  placeholder="+234 800 000 0000"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#0A1D42]"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="sm:col-span-1">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Email Address *
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@domain.com"
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#4C1D95]"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Email Address *
+              </label>
+              <input
+                type="email"
+                required
+                value={clientEmail}
+                onChange={(e) => setClientEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#0A1D42]"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <Calendar className="w-3.5 h-3.5 inline mr-1 text-[#0A1D42]" />
                   Preferred Date *
                 </label>
                 <input
@@ -231,64 +204,55 @@ export const InspectionModal: React.FC = () => {
                   required
                   value={preferredDate}
                   onChange={(e) => setPreferredDate(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#4C1D95]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#0A1D42]"
                 />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Time Slot (WAT)
+                  <Clock className="w-3.5 h-3.5 inline mr-1 text-[#0A1D42]" />
+                  Preferred Time *
                 </label>
                 <select
                   value={preferredTime}
                   onChange={(e) => setPreferredTime(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none focus:border-[#4C1D95]"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#0A1D42] bg-white"
                 >
-                  <option>10:00 AM (WAT)</option>
-                  <option>11:00 AM (WAT)</option>
-                  <option>01:00 PM (WAT)</option>
-                  <option>03:00 PM (WAT)</option>
-                  <option>04:30 PM (WAT)</option>
+                  <option value="09:30 AM">09:30 AM</option>
+                  <option value="11:00 AM">11:00 AM</option>
+                  <option value="01:00 PM">01:00 PM</option>
+                  <option value="03:00 PM">03:00 PM</option>
+                  <option value="04:30 PM">04:30 PM</option>
                 </select>
               </div>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Specific Interests (Land, House, Commercial, Co-Ownership, Title Review)
+                Specific Preferences or Questions (Optional)
               </label>
               <textarea
                 rows={2}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Any specific instructions for our advisory team..."
-                className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#4C1D95]"
+                placeholder="Tell us if you want to inspect Ajah, Lekki, Egbeda, Akowonjo, or Agbara..."
+                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#0A1D42]"
               />
             </div>
 
-            <div className="flex items-center justify-between text-[11px] text-slate-500 bg-purple-50/70 px-3.5 py-2.5 rounded-lg border border-purple-100">
-              <span className="inline-flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-[#4C1D95]" />
-                <span>HQ: {OFFICE_DETAILS.address}</span>
-              </span>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+            <div className="pt-2 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleResetAndClose}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
+              >
+                Cancel
+              </button>
               <button
                 type="submit"
-                className="flex-1 py-3 px-5 rounded-lg bg-gradient-to-r from-[#3B0764] to-[#4C1D95] hover:from-[#4C1D95] hover:to-[#3B0764] text-white font-bold text-xs uppercase tracking-wider shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-wider bg-[#FACC15] hover:bg-[#EAB308] text-[#07142B] shadow-md transition-all cursor-pointer"
               >
-                <Calendar className="w-4 h-4 text-[#F59E0B]" />
-                <span>Confirm Viewing Slot</span>
+                Confirm Inspection Slot
               </button>
-              <a
-                href={whatsappDirectUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="py-3 px-4 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
-              >
-                <MessageCircle className="w-4 h-4" />
-                <span>Prompt on WhatsApp</span>
-              </a>
             </div>
           </form>
         )}

@@ -2,76 +2,67 @@ import React, { useState } from 'react';
 import { Send, CheckCircle2, MessageCircle } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { getWhatsAppUrl } from '../../utils/whatsapp';
+import { CORE_SERVICES } from '../../data/mockData';
 
 export const ContactForm: React.FC = () => {
-  const { addEnquiry, services } = useData();
-  const [name, setName] = useState('');
+  const { addInquiry } = useData();
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [serviceType, setServiceType] = useState(services[0]?.title || 'Real Estate Consultancy');
-  const [budgetRange, setBudgetRange] = useState('₦25M – ₦75M');
+  const [serviceCategory, setServiceCategory] = useState('Real Estate Consultancy');
+  const [budgetRange, setBudgetRange] = useState('₦15M – ₦50M');
   const [message, setMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addEnquiry({
-      type: 'General',
-      name,
+    await addInquiry({
+      fullName,
       email,
       phone,
-      subject: `${serviceType} Inquiry (${budgetRange})`,
+      subject: `${serviceCategory} Inquiry (${budgetRange})`,
+      serviceCategory,
+      budgetRange,
       message,
-      meta: {
-        service: serviceType,
-        budget: budgetRange,
-      },
     });
     setSubmitted(true);
   };
 
-  const whatsappDirectUrl = getWhatsAppUrl(
-    `Hello Etosmania Global Properties, my name is ${
-      name || 'a prospective client'
-    }. I am inquiring about *${serviceType}* (Budget: ${budgetRange}). ${message}`
-  );
-
   if (submitted) {
+    const waText = `Hello Etosmania Global Properties, my name is *${fullName}*. I just submitted an inquiry regarding *${serviceCategory}* (Budget: ${budgetRange}).\n\nDetails: ${message}`;
     return (
-      <div className="bg-white rounded-2xl p-8 border border-purple-200 shadow-lg text-center space-y-5">
-        <div className="w-14 h-14 rounded-full bg-purple-100 text-[#3B0764] flex items-center justify-center mx-auto border border-[#D4AF37]">
-          <CheckCircle2 className="w-7 h-7 text-[#D4AF37]" />
+      <div className="bg-white rounded-3xl p-8 border border-[#0A1D42]/20 shadow-xl text-center space-y-5">
+        <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200">
+          <CheckCircle2 className="w-9 h-9" />
         </div>
-        <h3 className="font-serif text-2xl font-bold text-[#120721]">
-          Your Brief Has Reached Our Advisory Desk
+        <h3 className="font-serif-luxury text-2xl font-bold text-[#07142B]">
+          Inquiry Received by Etosmania Advisory
         </h3>
-        <p className="text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
-          Thank you, <strong>{name}</strong>. A senior consultant at{' '}
-          <strong>Etosmania Global Properties</strong> (10B Thomas Estate, Ajah) will respond
-          shortly. You can also connect with us immediately on WhatsApp below.
+        <p className="text-sm text-slate-600 max-w-md mx-auto">
+          Thank you, <strong>{fullName}</strong>. Our investment desk at 10b Thomas Estate, Ajah has
+          logged your brief. For an immediate response, continue this conversation on WhatsApp:
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+        <div className="flex flex-wrap justify-center gap-3 pt-2">
           <a
-            href={whatsappDirectUrl}
+            href={getWhatsAppUrl(waText)}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-[#25D366] hover:bg-[#20BD5A] text-white font-bold text-sm shadow-md"
           >
-            <MessageCircle className="w-4 h-4" />
+            <MessageCircle className="w-4 h-4 fill-white" />
             <span>Continue on WhatsApp</span>
           </a>
           <button
-            type="button"
             onClick={() => {
               setSubmitted(false);
-              setName('');
+              setFullName('');
               setEmail('');
               setPhone('');
               setMessage('');
             }}
-            className="px-5 py-3 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold uppercase tracking-wider hover:bg-slate-50 cursor-pointer"
+            className="px-5 py-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm"
           >
-            Send Another Inquiry
+            Send Another Message
           </button>
         </div>
       </div>
@@ -81,125 +72,125 @@ export const ContactForm: React.FC = () => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white rounded-2xl p-6 sm:p-8 border border-purple-100 shadow-lg space-y-5"
+      className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-xl space-y-5"
     >
-      <div className="border-b border-purple-100 pb-4">
-        <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#5B21B6] font-semibold block mb-1">
-          Private Mandate Brief
+      <div>
+        <span className="text-[11px] font-mono-tech uppercase tracking-widest text-[#07142B] bg-[#FACC15] px-2.5 py-1 rounded font-bold">
+          Direct Executive Brief
         </span>
-        <h3 className="font-serif text-2xl font-bold text-[#120721]">
-          Send an Inquiry to Etosmania Advisory
+        <h3 className="font-serif-luxury text-2xl font-bold text-[#07142B] mt-2">
+          Tell Us What You Are Looking For
         </h3>
+        <p className="text-xs text-slate-500 mt-1">
+          Select one of our 8 core services and your preferred Lagos corridor (Ajah, Lekki, Egbeda, Akowonjo, Agbara) below.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">Full Name *</label>
+          <label className="block text-xs font-bold text-slate-700 mb-1.5">Full Name *</label>
           <input
             type="text"
             required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
             placeholder="Your full name"
-            className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#4C1D95]"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#0A1D42]"
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Your Contact Phone / WhatsApp *
+          <label className="block text-xs font-bold text-slate-700 mb-1.5">
+            Phone / WhatsApp Number *
           </label>
           <input
             type="tel"
             required
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="Enter your phone number"
-            className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#4C1D95]"
+            placeholder="+234 800 000 0000"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#0A1D42]"
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Email Address *
-          </label>
+          <label className="block text-xs font-bold text-slate-700 mb-1.5">Email Address *</label>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            className="w-full px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#4C1D95]"
+            placeholder="you@domain.com"
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#0A1D42]"
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Service Division
+          <label className="block text-xs font-bold text-slate-700 mb-1.5">
+            Service Required *
           </label>
           <select
-            value={serviceType}
-            onChange={(e) => setServiceType(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none focus:border-[#4C1D95]"
+            value={serviceCategory}
+            onChange={(e) => setServiceCategory(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#0A1D42] bg-white"
           >
-            {services.map((s) => (
+            {CORE_SERVICES.map((s) => (
               <option key={s.id} value={s.title}>
                 {s.title}
               </option>
             ))}
           </select>
         </div>
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Target Capital Range
-          </label>
-          <select
-            value={budgetRange}
-            onChange={(e) => setBudgetRange(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none focus:border-[#4C1D95]"
-          >
-            <option>₦5M – ₦25M (Co-Ownership / Land)</option>
-            <option>₦25M – ₦75M (Serviced Land / Plots)</option>
-            <option>₦75M – ₦200M (Residential Duplex / Terrace)</option>
-            <option>₦200M – ₦500M+ (Commercial / Luxury Villa)</option>
-            <option>Property Management Mandate</option>
-          </select>
+      </div>
+
+      <div>
+        <label className="block text-xs font-bold text-slate-700 mb-1.5">
+          Target Investment Budget
+        </label>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {[
+            '₦5M – ₦15M (Co-Own)',
+            '₦15M – ₦50M',
+            '₦50M – ₦150M',
+            '₦150M+ Portfolio',
+          ].map((range) => (
+            <button
+              type="button"
+              key={range}
+              onClick={() => setBudgetRange(range)}
+              className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                budgetRange === range
+                  ? 'bg-[#0A1D42] text-white border-[#0A1D42]'
+                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-blue-50'
+              }`}
+            >
+              {range}
+            </button>
+          ))}
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-          Your Property or Investment Requirements *
+        <label className="block text-xs font-bold text-slate-700 mb-1.5">
+          How Can We Help You? *
         </label>
         <textarea
           rows={4}
           required
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="Tell us the location (e.g., Thomas Estate Ajah, Lekki Phase 1, Ibeju-Lekki, Victoria Island), property type, or payment plan you are looking for..."
-          className="w-full px-4 py-3 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-[#4C1D95]"
+          placeholder="Tell us about your preferred location (Ajah, Lekki, Egbeda, Akowonjo, Agbara, Ibeju-Lekki), property type, or co-ownership goals..."
+          className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-[#0A1D42]"
         />
       </div>
 
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
-        <button
-          type="submit"
-          className="flex-1 inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-lg bg-gradient-to-r from-[#3B0764] to-[#4C1D95] hover:from-[#4C1D95] hover:to-[#3B0764] text-white font-bold text-xs uppercase tracking-wider shadow-md transition-all cursor-pointer"
-        >
-          <Send className="w-4 h-4 text-[#F59E0B]" />
-          <span>Submit Official Brief</span>
-        </button>
-
-        <a
-          href={whatsappDirectUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center justify-center gap-2 py-3.5 px-5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs uppercase tracking-wider transition-colors whitespace-nowrap"
-        >
-          <MessageCircle className="w-4 h-4" />
-          <span>Continue on WhatsApp</span>
-        </a>
-      </div>
+      <button
+        type="submit"
+        className="w-full py-4 px-6 rounded-xl bg-[#0A1D42] hover:bg-[#07142B] text-white font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer"
+      >
+        <Send className="w-4 h-4 text-[#FACC15]" />
+        <span>Submit Brief to Etosmania Advisory</span>
+      </button>
     </form>
   );
 };

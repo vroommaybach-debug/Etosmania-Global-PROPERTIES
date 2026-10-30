@@ -13,19 +13,22 @@ export const DISPLAY_PRIMARY_PHONE = '0913 845 3949';
 export const DISPLAY_SECONDARY_PHONE = '0904 732 5666';
 
 /**
- * Builds a standard wa.me URL with clean URI-encoded text.
- */
-export function getWhatsAppUrl(message: string, phoneNumber: string = WHATSAPP_PHONE_NUMBER): string {
-  const sanitizedPhone = phoneNumber.replace(/[^0-9]/g, '');
-  const encodedText = encodeURIComponent(message.trim());
-  return `https://wa.me/${sanitizedPhone}?text=${encodedText}`;
-}
-
-/**
  * Pre-filled message for general enquiries or floating button.
  */
 export function getGeneralWhatsAppMessage(): string {
-  return 'Hello Etosmania Global Properties, I am interested in your Real Estate Gold portfolio (Land, Houses, Co-ownership & Investment) in Lagos and would like to speak with an advisor.';
+  return 'Hello Etosmania Global Properties, I am interested in your Real Estate Gold portfolio (Land, Houses, Co-ownership & Investment) across Ajah, Lekki, Egbeda, Akowonjo & Agbara and would like to speak with an advisor.';
+}
+
+/**
+ * Builds a standard wa.me URL with clean URI-encoded text.
+ */
+export function getWhatsAppUrl(
+  message: string = getGeneralWhatsAppMessage(),
+  phoneNumber: string = WHATSAPP_PHONE_NUMBER
+): string {
+  const sanitizedPhone = phoneNumber.replace(/[^0-9]/g, '');
+  const encodedText = encodeURIComponent(message.trim());
+  return `https://wa.me/${sanitizedPhone}?text=${encodedText}`;
 }
 
 /**
@@ -41,18 +44,30 @@ export function getPropertyWhatsAppMessage(property: {
   return `Hello Etosmania Global Properties, I'm interested in ${property.title} at ${property.location} (Ref: ${reference}). Is it still available?`;
 }
 
+export function getPropertyWhatsAppUrl(property: {
+  id: string;
+  title: string;
+  location: string;
+  priceFormatted?: string;
+}): string {
+  return getWhatsAppUrl(getPropertyWhatsAppMessage(property));
+}
+
 /**
  * Pre-filled message for scheduling a property inspection.
  */
 export function getInspectionWhatsAppMessage(params: {
   propertyTitle: string;
-  location: string;
-  ref: string;
+  location?: string;
+  ref?: string;
   preferredDate?: string;
   preferredTime?: string;
   clientName?: string;
+  inspectionType?: string;
 }): string {
-  let msg = `Hello Etosmania Global Properties, I would like to book an inspection for ${params.propertyTitle} at ${params.location} (Ref: ${params.ref}).`;
+  const locPart = params.location ? ` at ${params.location}` : '';
+  const refPart = params.ref ? ` (Ref: ${params.ref})` : '';
+  let msg = `Hello Etosmania Global Properties, I would like to book an inspection for ${params.propertyTitle}${locPart}${refPart}.`;
   if (params.preferredDate) {
     msg += ` Preferred date: ${params.preferredDate}`;
     if (params.preferredTime) {
@@ -60,10 +75,22 @@ export function getInspectionWhatsAppMessage(params: {
     }
     msg += '.';
   }
+  if (params.inspectionType) {
+    msg += ` Format: ${params.inspectionType}.`;
+  }
   if (params.clientName) {
     msg += ` My name is ${params.clientName}.`;
   }
   return msg;
+}
+
+export function getInspectionWhatsAppUrl(params: {
+  clientName: string;
+  propertyTitle: string;
+  preferredDate: string;
+  inspectionType: string;
+}): string {
+  return getWhatsAppUrl(getInspectionWhatsAppMessage(params));
 }
 
 /**
@@ -98,4 +125,18 @@ export function getCoOwnershipWhatsAppMessage(params: {
   projectedAnnualReturn?: string;
 }): string {
   return `Hello Etosmania Global Properties, I would like to reserve ${params.slots} co-ownership ${params.slots === 1 ? 'slot' : 'slots'} (${params.totalInvestment}) in "${params.projectTitle}".${params.projectedAnnualReturn ? ` Projected annual dividend: ${params.projectedAnnualReturn}.` : ''} Please share the Co-Ownership Deed and subscription steps.`;
+}
+
+export function getCoOwnershipWhatsAppUrl(params: {
+  title: string;
+  slots: number;
+  pricePerSlot: string;
+}): string {
+  return getWhatsAppUrl(
+    getCoOwnershipWhatsAppMessage({
+      projectTitle: params.title,
+      slots: params.slots,
+      totalInvestment: `${params.slots} x ${params.pricePerSlot}`,
+    })
+  );
 }

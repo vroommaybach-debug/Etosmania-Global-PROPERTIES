@@ -1,46 +1,42 @@
 <!doctype html>
-<html lang="en-NG">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
       (function () {
-        function isExtensionError(msg, source, stack) {
-          var combined = ((msg || '') + ' ' + (source || '') + ' ' + (stack || '')).toLowerCase();
+        function isExternalExtensionNoise(msg, src, stack) {
+          var combined = ((msg || '') + ' ' + (src || '') + ' ' + (stack || '')).toLowerCase();
           return (
-            combined.indexOf('metamask') !== -1 ||
             combined.indexOf('chrome-extension://') !== -1 ||
             combined.indexOf('moz-extension://') !== -1 ||
-            combined.indexOf('safari-web-extension://') !== -1 ||
+            combined.indexOf('metamask') !== -1 ||
             combined.indexOf('inpage.js') !== -1 ||
             combined.indexOf('ethereum') !== -1
           );
         }
-
         window.addEventListener(
           'error',
           function (event) {
             var msg = event && event.message ? String(event.message) : '';
-            var filename = event && event.filename ? String(event.filename) : '';
+            var src = event && event.filename ? String(event.filename) : '';
             var stack = event && event.error && event.error.stack ? String(event.error.stack) : '';
-            if (isExtensionError(msg, filename, stack)) {
-              event.preventDefault();
+            if (isExternalExtensionNoise(msg, src, stack)) {
               event.stopImmediatePropagation();
+              event.preventDefault();
               return false;
             }
           },
           true
         );
-
         window.addEventListener(
           'unhandledrejection',
           function (event) {
-            var reason = event ? event.reason : null;
-            var msg = reason && reason.message ? String(reason.message) : String(reason || '');
+            var reason = event && event.reason;
+            var msg = reason && (reason.message || String(reason));
             var stack = reason && reason.stack ? String(reason.stack) : '';
-            if (isExtensionError(msg, '', stack)) {
-              event.preventDefault();
+            if (isExternalExtensionNoise(msg, '', stack)) {
               event.stopImmediatePropagation();
+              event.preventDefault();
               return false;
             }
           },
@@ -48,161 +44,46 @@
         );
       })();
     </script>
-    <title>Etosmania Global Properties - Premier Lagos Real Estate &amp; Developments</title>
-    <meta
-      name="description"
-      content="Etosmania Global Properties Investment Limited (Real Estate Gold) at 10B Thomas Estate, Ajah, Lekki, Lagos. Specializing in Real Estate Consultancy, Investment, Sales of Land and Houses, Co-ownership, Residential Sales, Commercial Properties, Property Management, and Investment Consulting."
-    />
-    <meta
-      name="keywords"
-      content="Etosmania Global Properties, Etosmania Global Properties Investment Limited, Real Estate Gold Lagos, Thomas Estate Ajah real estate, Real Estate Co-ownership Lagos, Sales of Land and Houses Lekki, Property Management Lagos"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Etosmania Global Properties Investment Limited | Real Estate Gold in Lagos</title>
+    <meta name="description" content="Etosmania Global Properties Investment Limited — Your gateway to Real Estate Gold in Nigeria. World-class residential & commercial properties, land sales, real estate co-ownership, and investment consulting in Ajah, Lekki, Egbeda, Akowonjo, Agbara & Lagos." />
+    <meta name="keywords" content="Etosmania Global Properties, Etosmania Properties, Real Estate Gold Lagos, Land for sale in Ajah Lekki, Properties in Egbeda Lagos, Properties in Akowonjo Lagos, Land in Agbara, Real Estate Co-ownership Nigeria, Property Investment Lagos, 10b Thomas Estate Ajah, Residential and Commercial Properties Nigeria" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="author" content="Etosmania Global Properties Investment Limited" />
-    <meta name="application-name" content="Etosmania Global Properties" />
-    <meta name="apple-mobile-web-app-title" content="Etosmania Properties" />
-    <meta name="theme-color" content="#3B0764" />
+    <meta name="theme-color" content="#07142B" />
+
+    <!-- Geo Location Tags for Lagos, Nigeria -->
     <meta name="geo.region" content="NG-LA" />
-    <meta name="geo.placename" content="10B Thomas Estate, Ajah, Lekki, Lagos" />
+    <meta name="geo.placename" content="Ajah, Lekki, Egbeda, Akowonjo, Agbara, Lagos" />
     <meta name="geo.position" content="6.4698;3.5852" />
     <meta name="ICBM" content="6.4698, 3.5852" />
 
-    <!-- Etosmania Global Properties Browser Favicon & Web App Icon -->
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://etosmaniaglobalproperties.com/" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
-    <link rel="canonical" href="https://etosmaniaglobalproperties.com" />
 
-    <!-- OpenGraph Social & Business Cards -->
+    <!-- Open Graph / Facebook / WhatsApp Preview -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Etosmania Global Properties Investment Limited" />
+    <meta property="og:title" content="Etosmania Global Properties | Real Estate Gold — Co-Ownership, Land & Luxury Homes" />
+    <meta property="og:description" content="To deliver world-class residential and commercial properties that offer exceptional value and quality across Ajah, Lekki, Egbeda, Akowonjo, Agbara & Lagos." />
+    <meta property="og:url" content="https://etosmaniaglobalproperties.com/" />
+    <meta property="og:image" content="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=85" />
     <meta property="og:locale" content="en_NG" />
-    <meta property="og:url" content="https://etosmaniaglobalproperties.com" />
-    <meta
-      property="og:title"
-      content="Etosmania Global Properties - Premier Lagos Real Estate &amp; Developments"
-    />
-    <meta
-      property="og:description"
-      content="Etosmania Global Properties Investment Limited (Real Estate Gold) at 10B Thomas Estate, Ajah, Lekki, Lagos. Specializing in Real Estate Consultancy, Investment, Sales of Land and Houses, Co-ownership, Residential Sales, Commercial Properties, Property Management, and Investment Consulting."
-    />
-    <meta
-      property="og:image"
-      content="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=85"
-    />
 
-    <!-- Twitter / X Card -->
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta
-      name="twitter:title"
-      content="Etosmania Global Properties - Premier Lagos Real Estate &amp; Developments"
-    />
-    <meta
-      name="twitter:description"
-      content="Real Estate Gold in Lagos: Sales of Land &amp; Houses, Real Estate Co-ownership, Residential &amp; Commercial Properties, and Investment Consulting at 10B Thomas Estate, Ajah, Lekki."
-    />
-    <meta
-      name="twitter:image"
-      content="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=85"
-    />
+    <meta name="twitter:title" content="Etosmania Global Properties Investment Limited | Real Estate Gold" />
+    <meta name="twitter:description" content="Real Estate Consultancy, Investment, Land & House Sales, Co-Ownership, and Property Management across Ajah, Lekki, Egbeda, Akowonjo & Agbara." />
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=85" />
 
-    <!-- Schema.org Structured Data (RealEstateAgent + WebSite + Google Sitelinks) -->
-    <script id="etosmania-jsonld" type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@graph": [
-          {
-            "@type": "RealEstateAgent",
-            "@id": "https://etosmaniaglobalproperties.com/#organization",
-            "name": "Etosmania Global Properties",
-            "legalName": "Etosmania Global Properties Investment Limited",
-            "slogan": "Real Estate Gold You Are Looking For",
-            "url": "https://etosmaniaglobalproperties.com",
-            "logo": "https://etosmaniaglobalproperties.com/favicon.svg",
-            "email": "etosmaniaproperties@gmail.com",
-            "priceRange": "₦₦₦₦",
-            "address": {
-              "@type": "PostalAddress",
-              "streetAddress": "10B Thomas Estate, Ajah, Lekki",
-              "addressLocality": "Lekki",
-              "addressRegion": "Lagos State",
-              "postalCode": "106104",
-              "addressCountry": "NG"
-            }
-          },
-          {
-            "@type": "WebSite",
-            "@id": "https://etosmaniaglobalproperties.com/#website",
-            "url": "https://etosmaniaglobalproperties.com",
-            "name": "Etosmania Global Properties Investment Limited",
-            "publisher": {
-              "@id": "https://etosmaniaglobalproperties.com/#organization"
-            },
-            "potentialAction": {
-              "@type": "SearchAction",
-              "target": "https://etosmaniaglobalproperties.com/properties?location={search_term_string}",
-              "query-input": "required name=search_term_string"
-            }
-          },
-          {
-            "@type": "ItemList",
-            "@id": "https://etosmaniaglobalproperties.com/#sitelinks",
-            "name": "Etosmania Global Properties Main Navigation & Google Sitelinks",
-            "itemListElement": [
-              {
-                "@type": "SiteNavigationElement",
-                "position": 1,
-                "name": "Land, Residential & Commercial Properties",
-                "description": "Browse verified land plots, luxury residential houses, duplexes, and commercial properties across Thomas Estate Ajah, Lekki, Victoria Island, Ikoyi, and Ibeju-Lekki.",
-                "url": "https://etosmaniaglobalproperties.com/properties"
-              },
-              {
-                "@type": "SiteNavigationElement",
-                "position": 2,
-                "name": "Real Estate Co-Ownership & Wealth Hub",
-                "description": "Co-own high-yield residential and commercial properties in Lagos with structured fractional slots, legal deeds, and guaranteed rental dividends.",
-                "url": "https://etosmaniaglobalproperties.com/co-ownership"
-              },
-              {
-                "@type": "SiteNavigationElement",
-                "position": 3,
-                "name": "Signature Estates & Developments",
-                "description": "Explore sustainable community-centered residential and commercial developments with flexible milestone payment plans.",
-                "url": "https://etosmaniaglobalproperties.com/developments"
-              },
-              {
-                "@type": "SiteNavigationElement",
-                "position": 4,
-                "name": "Our 8 Core Real Estate Services",
-                "description": "Real Estate Consultancy, Real Estate Investment, Sales of Land and Houses, Co-ownership, Residential Sales, Commercial Properties, Property Management, and Investment Consulting.",
-                "url": "https://etosmaniaglobalproperties.com/services"
-              },
-              {
-                "@type": "SiteNavigationElement",
-                "position": 5,
-                "name": "About Etosmania Global Properties",
-                "description": "Discover our Mission, Vision, and Core Values (Integrity, Professionalism, Customer Service, Continuous Learning) at 10B Thomas Estate, Ajah, Lekki.",
-                "url": "https://etosmaniaglobalproperties.com/about"
-              },
-              {
-                "@type": "SiteNavigationElement",
-                "position": 6,
-                "name": "Contact & WhatsApp Concierge",
-                "description": "Connect with Etosmania Global Properties at 10B Thomas Estate, Ajah, Lekki, Lagos via our WhatsApp Concierge or etosmaniaproperties@gmail.com.",
-                "url": "https://etosmaniaglobalproperties.com/contact"
-              }
-            ]
-          }
-        ]
-      }
-    </script>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+    <!-- Google Fonts: Fraunces (Display Serif), Plus Jakarta Sans (Clean Geometric Sans), JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   </head>
-  <body class="bg-[#FAF9FC] text-[#140A24] antialiased selection:bg-[#4C1D95]/15 selection:text-[#3B0764]">
+  <body class="bg-[#F8FAFC] text-[#07142B] antialiased selection:bg-[#FACC15] selection:text-[#07142B]">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

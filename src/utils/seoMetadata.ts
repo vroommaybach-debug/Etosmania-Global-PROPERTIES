@@ -1,4 +1,10 @@
+import { Property, DevelopmentProject } from '../types';
+
 export const PRIMARY_DOMAIN = 'https://etosmaniaglobalproperties.com';
+export const SITE_URL = PRIMARY_DOMAIN;
+export const SITE_NAME = 'Etosmania Global Properties Investment Limited';
+export const DEFAULT_OG_IMAGE =
+  'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=85';
 
 export interface RouteMetadata {
   title: string;
@@ -10,13 +16,24 @@ export interface RouteMetadata {
   breadcrumbName: string;
 }
 
+export interface PageSEOConfig {
+  title: string;
+  description: string;
+  canonicalPath: string;
+  ogType?: 'website' | 'article';
+  ogImage?: string;
+  keywords?: string;
+  breadcrumbs: { name: string; path: string }[];
+  jsonLd?: Record<string, unknown>[];
+}
+
 export const SUBPAGE_SITELINKS = [
   {
     name: 'Land, Residential & Commercial Properties',
     path: '/properties',
     url: `${PRIMARY_DOMAIN}/properties`,
     description:
-      'Browse verified land plots, luxury residential duplexes, detached houses, and commercial properties in Thomas Estate Ajah, Lekki, Victoria Island, Ikoyi, and Ibeju-Lekki.',
+      'Browse verified land plots, luxury residential duplexes, detached houses, and commercial properties in Ajah, Lekki, Egbeda, Akowonjo, Agbara, and Ibeju-Lekki.',
   },
   {
     name: 'Real Estate Co-Ownership & Wealth Hub',
@@ -30,7 +47,7 @@ export const SUBPAGE_SITELINKS = [
     path: '/developments',
     url: `${PRIMARY_DOMAIN}/developments`,
     description:
-      'Explore sustainable community-centered residential and commercial developments in Lagos with milestone payment plans and verified titles.',
+      'Explore sustainable community-centered residential and commercial developments across Ajah, Lekki, Egbeda, Akowonjo, and Agbara.',
   },
   {
     name: 'Our 8 Core Real Estate Services',
@@ -47,19 +64,14 @@ export const SUBPAGE_SITELINKS = [
       'Learn about Etosmania Global Properties Investment Limited, our Mission, Vision, and Core Values (Integrity, Professionalism, Customer Service, Continuous Learning) at 10B Thomas Estate, Ajah.',
   },
   {
-    name: 'Contact & WhatsApp Advisory (09138453949)',
+    name: 'Contact & WhatsApp Concierge',
     path: '/contact',
     url: `${PRIMARY_DOMAIN}/contact`,
     description:
-      'Visit Etosmania Global Properties at 10B Thomas Estate, Ajah, Lekki, Lagos State or reach us on WhatsApp at 09138453949 / 09047325666.',
+      'Visit Etosmania Global Properties at 10B Thomas Estate, Ajah, Lekki, Lagos State or connect via our instant WhatsApp Concierge.',
   },
 ];
 
-const DEFAULT_OG_IMAGE = '/assets/aistudio/etosmania_banner_d2c2bdeb.jpeg';
-
-/**
- * Resolves route-specific SEO metadata for Google Search, browser tabs, OpenGraph, and canonical URLs.
- */
 export function resolveRouteMetadata(pathname: string): RouteMetadata {
   const cleanPath = (pathname || '/').split('?')[0].replace(/\/+$/, '') || '/';
   const canonicalUrl = `${PRIMARY_DOMAIN}${cleanPath === '/' ? '' : cleanPath}`;
@@ -68,12 +80,12 @@ export function resolveRouteMetadata(pathname: string): RouteMetadata {
     return {
       title: 'Sales of Land, Houses & Commercial Properties in Lagos | Etosmania Global Properties',
       description:
-        'Explore verified dry land plots, luxury residential houses, and commercial properties in Thomas Estate Ajah, Lekki Phase 1, Victoria Island, Ikoyi, and Ibeju-Lekki.',
+        'Explore verified dry land plots, luxury residential houses, and commercial properties in Ajah, Lekki, Egbeda, Akowonjo, Agbara, Victoria Island, Ikoyi, and Ibeju-Lekki.',
       canonicalUrl,
       ogType: 'website',
       ogImage: DEFAULT_OG_IMAGE,
       keywords:
-        'Sales of Land and Houses Lagos, Thomas Estate Ajah properties, Lekki duplexes for sale, commercial properties Lagos, Etosmania Global Properties',
+        'Sales of Land and Houses Lagos, Thomas Estate Ajah properties, Egbeda properties, Akowonjo properties, Agbara land, Lekki duplexes for sale, Etosmania Global Properties',
       breadcrumbName: 'Properties & Land',
     };
   }
@@ -95,7 +107,7 @@ export function resolveRouteMetadata(pathname: string): RouteMetadata {
     return {
       title: 'Real Estate Co-Ownership & Fractional Investment in Lagos | Etosmania Global Properties',
       description:
-        'Build wealth through verified Real Estate Co-ownership in Lagos. Co-own prime residential duplexes, short-let apartments, and commercial land in Ajah, Lekki & VI.',
+        'Build wealth through verified Real Estate Co-ownership in Lagos. Co-own prime residential duplexes, short-let apartments, and commercial land in Ajah, Lekki, Akowonjo & Egbeda.',
       canonicalUrl,
       ogType: 'website',
       ogImage: DEFAULT_OG_IMAGE,
@@ -109,12 +121,12 @@ export function resolveRouteMetadata(pathname: string): RouteMetadata {
     return {
       title: 'Signature Estates & Community-Centered Developments | Etosmania Global Properties',
       description:
-        'Invest in sustainable community-centered residential and commercial developments across Ajah, Lekki, Ibeju-Lekki, and Victoria Island with flexible payment plans.',
+        'Invest in sustainable community-centered residential and commercial developments across Ajah, Lekki, Egbeda, Akowonjo, Agbara, and Ibeju-Lekki with flexible payment plans.',
       canonicalUrl,
       ogType: 'website',
       ogImage: DEFAULT_OG_IMAGE,
       keywords:
-        'Off-plan developments Lagos, Thomas Estate Ajah developments, Lekki estates, Etosmania Global Properties developments',
+        'Off-plan developments Lagos, Thomas Estate Ajah developments, Egbeda Akowonjo Agbara estates, Etosmania Global Properties developments',
       breadcrumbName: 'Developments',
     };
   }
@@ -141,7 +153,7 @@ export function resolveRouteMetadata(pathname: string): RouteMetadata {
       ogType: 'website',
       ogImage: DEFAULT_OG_IMAGE,
       keywords:
-        'Real Estate Consultancy Lagos, Real Estate Investment Nigeria, Property Management Ajah Lekki, Investment Consulting Lagos, Etosmania Global Properties services',
+        'Real Estate Consultancy Lagos, Real Estate Investment Nigeria, Property Management Ajah Lekki Egbeda Akowonjo, Investment Consulting Lagos',
       breadcrumbName: 'Our 8 Services',
     };
   }
@@ -162,14 +174,14 @@ export function resolveRouteMetadata(pathname: string): RouteMetadata {
 
   if (cleanPath === '/contact') {
     return {
-      title: 'Contact Etosmania Global Properties | 10B Thomas Estate, Ajah, Lekki (09138453949)',
+      title: 'Contact Etosmania Global Properties | 10B Thomas Estate, Ajah, Lekki, Lagos',
       description:
-        'Visit Etosmania Global Properties Investment Limited at 10B Thomas Estate, Ajah, Lekki, Lagos State. Call or WhatsApp 09138453949 / 09047325666 or email etosmaniaproperties@gmail.com.',
+        'Visit Etosmania Global Properties Investment Limited at 10B Thomas Estate, Ajah, Lekki, Lagos State. Email etosmaniaproperties@gmail.com or connect via our WhatsApp Concierge.',
       canonicalUrl,
       ogType: 'website',
       ogImage: DEFAULT_OG_IMAGE,
       keywords:
-        'Contact Etosmania Global Properties, 10B Thomas Estate Ajah Lekki Lagos, 09138453949, 09047325666, etosmaniaproperties@gmail.com',
+        'Contact Etosmania Global Properties, 10B Thomas Estate Ajah Lekki Lagos, etosmaniaproperties@gmail.com',
       breadcrumbName: 'Contact Advisory',
     };
   }
@@ -189,20 +201,16 @@ export function resolveRouteMetadata(pathname: string): RouteMetadata {
   return {
     title: 'Etosmania Global Properties - Premier Lagos Real Estate & Developments',
     description:
-      'Etosmania Global Properties Investment Limited (Real Estate Gold) at 10B Thomas Estate, Ajah, Lekki, Lagos. Specializing in Real Estate Consultancy, Investment, Sales of Land and Houses, Co-ownership, Residential Sales, Commercial Properties, Property Management, and Investment Consulting.',
+      'Etosmania Global Properties Investment Limited (Real Estate Gold) at 10B Thomas Estate, Ajah, Lekki, Lagos. Serving Ajah, Lekki, Egbeda, Akowonjo, Agbara, and greater Lagos.',
     canonicalUrl: PRIMARY_DOMAIN,
     ogType: 'website',
     ogImage: DEFAULT_OG_IMAGE,
     keywords:
-      'Etosmania Global Properties, Real Estate Gold, 10B Thomas Estate Ajah Lekki, Sales of Land and Houses, Real Estate Co-ownership, 09138453949',
+      'Etosmania Global Properties, Real Estate Gold, 10B Thomas Estate Ajah Lekki, Egbeda, Akowonjo, Agbara, Sales of Land and Houses, Real Estate Co-ownership',
     breadcrumbName: 'Home',
   };
 }
 
-/**
- * Generates Schema.org JSON-LD structured data including RealEstateAgent, WebSite,
- * SiteNavigationElement (for Google Sitelinks), and BreadcrumbList.
- */
 export function buildStructuredDataJsonLd(pathname: string) {
   const meta = resolveRouteMetadata(pathname);
   const cleanPath = (pathname || '/').split('?')[0].replace(/\/+$/, '') || '/';
@@ -240,6 +248,9 @@ export function buildStructuredDataJsonLd(pathname: string) {
         areaServed: [
           { '@type': 'City', name: 'Ajah & Thomas Estate, Lekki, Lagos' },
           { '@type': 'City', name: 'Lekki Phase 1, Lagos' },
+          { '@type': 'City', name: 'Egbeda, Lagos' },
+          { '@type': 'City', name: 'Akowonjo, Lagos' },
+          { '@type': 'City', name: 'Agbara, Lagos Corridor' },
           { '@type': 'City', name: 'Victoria Island, Lagos' },
           { '@type': 'City', name: 'Ikoyi, Lagos' },
           { '@type': 'City', name: 'Ibeju-Lekki, Lagos' },
@@ -300,6 +311,43 @@ export function buildStructuredDataJsonLd(pathname: string) {
                 },
               ],
       },
+    ],
+  };
+}
+
+export function buildPropertyDetailSEO(property: Property): PageSEOConfig {
+  const canonicalPath = `/properties/${property.id}`;
+  const image = property.images?.[0] || DEFAULT_OG_IMAGE;
+
+  return {
+    title: `${property.title} (${property.priceFormatted}) | Etosmania Global Properties`,
+    description: `${property.title} in ${property.location}. ${property.priceFormatted} • ${property.sqm} sqm • ${property.type}. Verified title by Etosmania Global Properties Investment Limited.`,
+    canonicalPath,
+    ogType: 'article',
+    ogImage: image,
+    keywords: `${property.title}, ${property.area} real estate, ${property.type} in Lagos, Etosmania Global Properties`,
+    breadcrumbs: [
+      { name: 'Home', path: '/' },
+      { name: 'Land & Properties', path: '/properties' },
+      { name: property.title, path: canonicalPath },
+    ],
+  };
+}
+
+export function buildDevelopmentDetailSEO(project: DevelopmentProject): PageSEOConfig {
+  const canonicalPath = `/developments/${project.id}`;
+
+  return {
+    title: `${project.name} — ${project.location} | Etosmania Global Properties`,
+    description: `${project.name}: ${project.tagline}. Starting at ${project.startingPrice} in ${project.location}. Completion: ${project.completionDate}.`,
+    canonicalPath,
+    ogType: 'article',
+    ogImage: project.heroImage || DEFAULT_OG_IMAGE,
+    keywords: `${project.name}, ${project.location}, Etosmania Global Properties estates, Real Estate Gold Lagos`,
+    breadcrumbs: [
+      { name: 'Home', path: '/' },
+      { name: 'Developments', path: '/developments' },
+      { name: project.name, path: canonicalPath },
     ],
   };
 }

@@ -1,8 +1,17 @@
-export type PropertyType = 'Villa' | 'Penthouse' | 'Duplex' | 'Terrace' | 'Apartment' | 'Land' | 'Commercial';
-
-export type LocationArea = 'Ikoyi' | 'Victoria Island' | 'Lekki Phase 1' | 'Eko Atlantic' | 'Banana Island' | 'Ibeju-Lekki' | 'Ikeja GRA';
-
-export type PropertyStatus = 'Available' | 'Sold' | 'Off-Plan';
+export type PropertyType = 'Residential' | 'Commercial' | 'Land' | 'Co-Ownership' | 'Investment';
+export type PropertyStatus = 'Available' | 'Reserved' | 'Sold' | 'Under Construction' | 'Co-Ownership Open';
+export type LocationArea =
+  | 'Ajah'
+  | 'Lekki'
+  | 'Egbeda'
+  | 'Akowonjo'
+  | 'Agbara'
+  | 'Ikoyi'
+  | 'Victoria Island'
+  | 'Ikeja GRA'
+  | 'Epe'
+  | 'Ibeju-Lekki'
+  | 'Abuja';
 
 export type CurrencyCode = 'NGN' | 'USD' | 'GBP';
 
@@ -10,160 +19,125 @@ export interface Property {
   id: string;
   title: string;
   slug: string;
-  price: number; // Base price in NGN
-  location: LocationArea;
-  address: string;
+  price: number;
+  priceFormatted: string;
+  location: string;
+  area: LocationArea;
+  type: PropertyType;
+  status: PropertyStatus;
   bedrooms: number;
   bathrooms: number;
   sqm: number;
-  plotSizeSqm?: number;
-  type: PropertyType;
-  status: PropertyStatus;
   featured?: boolean;
-  coOwnershipEligible?: boolean;
-  pricePerSlot?: number;
-  titleDocument: string; // e.g., "Governor's Consent", "C of O"
-  CompletionQuarter?: string;
+  isNew?: boolean;
   description: string;
-  highlights: string[];
   amenities: string[];
   images: string[];
-  videoUrl?: string;
-  agent: {
-    name: string;
-    role: string;
-    phone: string;
-    image: string;
-  };
   coordinates: {
     lat: number;
     lng: number;
   };
-}
-
-export interface CoOwnershipProject {
-  id: string;
-  title: string;
-  slug: string;
-  location: LocationArea;
-  address: string;
-  assetType: 'Residential Duplex Pool' | 'Short-Let Apartment Syndicate' | 'Commercial Corporate Suite' | 'Strategic Land Bank';
-  totalValuation: number;
-  pricePerSlot: number;
-  totalSlots: number;
-  availableSlots: number;
-  minSlots: number;
-  projectedAnnualYieldPct: number;
-  projectedCapitalGrowthPct: number;
-  holdPeriodYears: number;
-  payoutFrequency: 'Quarterly' | 'Bi-Annual' | 'Annual Exit';
-  titleDocument: string;
-  legalStructure: string;
-  image: string;
-  summary: string;
-  highlights: string[];
-}
-
-export interface DevelopmentMilestone {
-  stage: string;
-  date: string;
-  completed: boolean;
-  description: string;
-}
-
-export interface FloorPlan {
-  id: string;
-  name: string;
-  bedrooms: number;
-  sqm: number;
-  priceFrom: string;
-  features: string[];
+  agent: {
+    name: string;
+    role: string;
+    phone: string;
+    whatsapp: string;
+    avatar: string;
+  };
+  createdAt: string;
+  coOwnershipDetails?: {
+    slotsTotal: number;
+    slotsAvailable: number;
+    pricePerSlot: string;
+    projectedAnnualYield: string;
+    holdPeriod: string;
+  };
 }
 
 export interface DevelopmentProject {
   id: string;
   name: string;
-  slug: string;
   tagline: string;
-  location: LocationArea;
-  status: 'Pre-Launch' | 'Under Construction' | 'Ready to Move' | 'Sold Out';
+  location: string;
   completionDate: string;
-  startingPrice: number;
+  status: 'Ongoing' | 'Completed' | 'Upcoming';
+  startingPrice: string;
   totalUnits: number;
   availableUnits: number;
-  yieldEstimate: string;
+  description: string;
+  highlights: string[];
   heroImage: string;
   gallery: string[];
-  overview: string;
-  architecturalConcept: string;
-  features: string[];
-  milestones: DevelopmentMilestone[];
-  floorPlans: FloorPlan[];
+  brochureUrl?: string;
 }
 
 export interface ServiceItem {
   id: string;
+  number: string;
   title: string;
-  tagline: string;
-  category: 'Advisory & Consulting' | 'Sales & Acquisition' | 'Wealth & Co-Ownership' | 'Asset Management';
+  shortDesc: string;
   description: string;
-  deliverables: string[];
   iconName: string;
+  deliverables: string[];
   ctaText: string;
-  whatsappMessage?: string;
+  whatsappPrompt: string;
 }
 
-export interface Testimonial {
+export interface CoOwnershipAsset {
   id: string;
-  quote: string;
-  author: string;
-  role: string;
+  title: string;
   location: string;
-  propertyPurchased: string;
-  avatar: string;
-}
-
-export interface TeamMember {
-  id: string;
-  name: string;
-  role: string;
-  bio: string;
-  credentials: string;
+  totalValue: string;
+  pricePerSlot: string;
+  totalSlots: number;
+  availableSlots: number;
+  projectedYield: string;
+  appreciationTarget: string;
+  minimumHold: string;
+  status: 'Open for Subscription' | '85% Subscribed' | 'Fully Subscribed';
   image: string;
-  linkedin?: string;
+  highlights: string[];
 }
 
-export interface EnquiryRecord {
+export interface SiteConfig {
+  heroStyle: 'full-bleed' | 'split';
+  heroBadge: string;
+  heroTitleLine1: string;
+  heroTitleHighlight: string;
+  heroSubtitle: string;
+  heroImage: string;
+  heroSecondaryImage: string;
+  missionStatement: string;
+  visionStatement: string;
+  coreValues: string[];
+  headOfficeAddress: string;
+  contactEmail: string;
+  whatsappCtaLabel: string;
+}
+
+export interface InspectionBooking {
   id: string;
-  type: 'General' | 'Inspection' | 'Service' | 'Development' | 'Valuation';
-  name: string;
+  propertyId?: string;
+  propertyTitle?: string;
+  clientName: string;
+  clientEmail: string;
+  clientPhone: string;
+  preferredDate: string;
+  preferredTime: string;
+  inspectionType: 'In-Person' | 'Virtual Video Tour' | 'Co-Ownership Briefing';
+  notes?: string;
+  createdAt: string;
+  status: 'Pending' | 'Confirmed' | 'Completed';
+}
+
+export interface ContactInquiry {
+  id: string;
+  fullName: string;
   email: string;
   phone: string;
   subject: string;
   message: string;
+  budgetRange?: string;
+  serviceCategory?: string;
   createdAt: string;
-  status: 'New' | 'In Progress' | 'Closed';
-  meta?: Record<string, string>;
-}
-
-export type HeroStyleMode = 'full-bleed' | 'split';
-
-export interface LandingPageConfig {
-  heroStyle?: HeroStyleMode;
-  heroTagline: string;
-  heroHeadline: string;
-  heroSubheadline: string;
-  heroImage: string;
-  announcementBanner: string;
-  showAnnouncement: boolean;
-  stats: {
-    yearsExperience: string;
-    totalVolume: string;
-    verifiedAssets: string;
-    diasporaSatisfaction: string;
-  };
-  contactPhone: string;
-  contactWhatsapp: string;
-  contactEmail: string;
-  contactAddress: string;
 }

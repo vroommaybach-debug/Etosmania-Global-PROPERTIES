@@ -60,55 +60,89 @@
       "type": "object",
       "properties": {
         "id": { "type": "string" },
+        "number": { "type": "string" },
         "title": { "type": "string" },
-        "tagline": { "type": "string" },
-        "description": { "type": "string" },
+        "shortDesc": { "type": "string" },
+        "fullDesc": { "type": "string" },
         "deliverables": { "type": "array" },
-        "whatsappMessage": { "type": "string" },
-        "image": { "type": "string" },
-        "categoryBadge": { "type": "string" }
+        "ctaText": { "type": "string" },
+        "image": { "type": "string" }
       },
-      "required": ["id", "title", "tagline", "description", "deliverables"]
+      "required": ["id", "title"]
     },
-    "enquiry": {
-      "title": "Enquiry",
-      "description": "Inbound client enquiry, inspection request, co-ownership reservation, or investor pack request",
+    "coOwnershipAsset": {
+      "title": "CoOwnershipAsset",
+      "description": "Fractional real estate co-ownership syndicate asset",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
-        "type": { "type": "string", "enum": ["inspection", "development", "contact", "service", "co-ownership"] },
-        "name": { "type": "string", "maxLength": 120 },
-        "phone": { "type": "string", "maxLength": 50 },
-        "email": { "type": "string", "maxLength": 150 },
-        "subject": { "type": "string", "maxLength": 200 },
-        "details": { "type": "string", "maxLength": 2000 },
-        "propertyOrProjectTitle": { "type": "string", "maxLength": 200 },
-        "propertyOrProjectId": { "type": "string", "maxLength": 100 },
-        "preferredDate": { "type": "string", "maxLength": 50 },
-        "preferredTime": { "type": "string", "maxLength": 50 },
-        "budget": { "type": "string", "maxLength": 100 },
-        "createdAt": { "type": "string" },
-        "status": { "type": "string", "enum": ["new", "contacted", "resolved"] }
+        "title": { "type": "string" },
+        "location": { "type": "string" },
+        "address": { "type": "string" },
+        "totalValue": { "type": "number" },
+        "pricePerSlot": { "type": "number" },
+        "totalSlots": { "type": "number" },
+        "availableSlots": { "type": "number" },
+        "expectedAnnualYield": { "type": "string" },
+        "holdPeriod": { "type": "string" },
+        "titleDocument": { "type": "string" },
+        "image": { "type": "string" },
+        "highlights": { "type": "array" },
+        "category": { "type": "string" }
       },
-      "required": ["id", "type", "name", "phone", "subject", "details", "createdAt", "status"]
+      "required": ["id", "title", "location", "pricePerSlot", "totalSlots"]
+    },
+    "booking": {
+      "title": "InspectionBooking",
+      "description": "Client property inspection booking request",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "propertyId": { "type": "string" },
+        "propertyTitle": { "type": "string" },
+        "fullName": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "preferredDate": { "type": "string" },
+        "preferredTime": { "type": "string" },
+        "inspectionType": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "fullName", "phone", "createdAt", "status"]
+    },
+    "inquiry": {
+      "title": "ContactInquiry",
+      "description": "Inbound client contact or service inquiry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fullName": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "interestType": { "type": "string" },
+        "budgetRange": { "type": "string" },
+        "preferredLocation": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "fullName", "phone", "createdAt"]
     },
     "landingConfig": {
       "title": "LandingConfig",
-      "description": "Etosmania Global Properties landing page CMS configuration, hero style mode, hero photos, headlines, co-ownership catalog, and admin gate security settings",
+      "description": "Etosmania Global Properties landing page CMS configuration, hero style mode, hero photos, headlines, and admin gate security settings",
       "type": "object",
       "properties": {
         "heroStyle": { "type": "string", "enum": ["full-bleed", "split"] },
+        "heroBadge": { "type": "string" },
+        "heroTitleLine1": { "type": "string" },
+        "heroTitleAccent": { "type": "string" },
+        "heroSubtitle": { "type": "string" },
         "heroImage": { "type": "string" },
         "heroSecondaryImage": { "type": "string" },
-        "heroHeadline": { "type": "string", "maxLength": 250 },
-        "heroSubline": { "type": "string", "maxLength": 500 },
-        "heroBadgeText": { "type": "string", "maxLength": 150 },
-        "aboutOfficeImage": { "type": "string" },
-        "whyEtosmaniaImage": { "type": "string" },
-        "coOwnershipBannerImage": { "type": "string" },
-        "featuredHighlightTitle": { "type": "string", "maxLength": 150 },
-        "missionStatement": { "type": "string", "maxLength": 500 },
-        "visionStatement": { "type": "string", "maxLength": 500 },
+        "featuredBannerTitle": { "type": "string" },
+        "featuredBannerLocation": { "type": "string" },
         "gatePassword": { "type": "string", "maxLength": 128 },
         "updatedAt": { "type": "string" }
       }
@@ -117,7 +151,7 @@
   "firestore": {
     "/properties/{propertyId}": {
       "schema": "property",
-      "description": "Catalog of luxury properties for sale and rent in Lagos"
+      "description": "Catalog of luxury properties and verified land in Lagos"
     },
     "/developments/{developmentId}": {
       "schema": "development",
@@ -127,13 +161,33 @@
       "schema": "service",
       "description": "Catalog of advisory and brokerage services"
     },
+    "/servicesCatalog/{serviceId}": {
+      "schema": "service",
+      "description": "Active CMS catalog of real estate service pillars"
+    },
+    "/coOwnershipCatalog/{assetId}": {
+      "schema": "coOwnershipAsset",
+      "description": "Active CMS catalog of fractional co-ownership assets"
+    },
+    "/bookings/{bookingId}": {
+      "schema": "booking",
+      "description": "Property inspection bookings"
+    },
+    "/inquiries/{inquiryId}": {
+      "schema": "inquiry",
+      "description": "Client contact and advisory inquiries"
+    },
     "/enquiries/{enquiryId}": {
-      "schema": "enquiry",
-      "description": "Inbound viewing appointments, investor packs, and consultation requests"
+      "schema": "inquiry",
+      "description": "Legacy inbound enquiries"
+    },
+    "/siteSettings/{settingId}": {
+      "schema": "landingConfig",
+      "description": "Active landing page CMS configuration"
     },
     "/settings/{settingId}": {
       "schema": "landingConfig",
-      "description": "Website CMS settings including hero photo, landing highlights, and adminSecurity gate password"
+      "description": "Website CMS settings and adminSecurity gate password"
     }
   }
 }

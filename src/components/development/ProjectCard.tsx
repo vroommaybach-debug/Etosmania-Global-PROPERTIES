@@ -1,105 +1,102 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, ArrowRight, TrendingUp, Calendar, MessageCircle } from 'lucide-react';
+import { MapPin, Calendar, ArrowUpRight, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { DevelopmentProject } from '../../types';
-import { formatNairaCompact } from '../../utils/formatters';
-import { getWhatsAppUrl } from '../../utils/whatsapp';
 import { SafeImage } from '../common/SafeImage';
+import { getWhatsAppUrl } from '../../utils/whatsapp';
 
 interface ProjectCardProps {
   project: DevelopmentProject;
 }
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
-  const whatsappLink = getWhatsAppUrl(
-    `Hello Etosmania Global Properties, I am interested in "${project.name}" (${project.location}) starting from ${formatNairaCompact(
-      project.startingPrice
-    )}. Please share the brochure and payment plan.`
-  );
-
   return (
-    <div className="group bg-white rounded-2xl overflow-hidden border border-purple-100 hover:border-[#D4AF37] shadow-sm hover:shadow-xl transition-all duration-300 grid grid-cols-1 lg:grid-cols-12">
-      {/* Left Image Column */}
-      <div className="lg:col-span-5 relative min-h-[280px] lg:min-h-full overflow-hidden bg-[#18062C]">
+    <div className="group bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 flex flex-col lg:flex-row">
+      {/* Left Image */}
+      <div className="lg:w-5/12 relative min-h-[280px] lg:min-h-full overflow-hidden bg-slate-100">
         <SafeImage
           src={project.heroImage}
           alt={project.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#120721]/85 via-transparent to-transparent" />
-
-        <div className="absolute top-4 left-4">
-          <span className="px-3 py-1 rounded-md text-xs font-mono uppercase tracking-wider font-semibold bg-[#18062C]/90 text-[#F59E0B] border border-[#D4AF37]/40 backdrop-blur-md">
+        <div className="absolute top-4 left-4 flex items-center gap-2">
+          <span className="px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-[#07142B] text-[#FACC15] border border-[#FACC15]/40">
             {project.status}
           </span>
         </div>
-
-        <div className="absolute bottom-4 left-4 right-4 text-white">
-          <span className="text-[11px] font-mono uppercase tracking-widest text-purple-200 block">
-            Entry Price From
-          </span>
-          <p className="font-mono text-2xl font-bold text-[#F59E0B]">
-            {formatNairaCompact(project.startingPrice)}
+        <div className="absolute bottom-4 left-4 right-4 bg-[#07142B]/95 backdrop-blur-md p-3.5 rounded-xl border border-white/15 text-white">
+          <p className="text-[10px] font-mono-tech uppercase tracking-widest text-[#FACC15]">
+            Starting Entry Price
           </p>
+          <p className="font-mono-tech text-lg font-bold">{project.startingPrice}</p>
         </div>
       </div>
 
-      {/* Right Details Column */}
-      <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-slate-500 mb-2">
-            <span className="inline-flex items-center gap-1 text-[#4C1D95] font-semibold">
-              <MapPin className="w-3.5 h-3.5 text-[#D4AF37]" />
+      {/* Right Content */}
+      <div className="lg:w-7/12 p-6 sm:p-8 flex flex-col justify-between space-y-6">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+            <span className="inline-flex items-center gap-1.5 font-semibold text-[#0A1D42]">
+              <MapPin className="w-3.5 h-3.5 text-[#EAB308]" />
               {project.location}
             </span>
-            <span>·</span>
-            <span className="inline-flex items-center gap-1">
+            <span className="inline-flex items-center gap-1.5 font-mono-tech">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               Delivery: {project.completionDate}
             </span>
-            <span>·</span>
-            <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold">
-              <TrendingUp className="w-3.5 h-3.5" />
-              {project.yieldEstimate}
-            </span>
           </div>
 
-          <Link to={`/developments/${project.slug}`}>
-            <h3 className="font-serif text-2xl sm:text-3xl font-bold text-[#120721] group-hover:text-[#4C1D95] transition-colors mb-2">
+          <Link to={`/developments/${project.id}`}>
+            <h3 className="font-serif-luxury text-2xl sm:text-3xl font-bold text-[#07142B] group-hover:text-[#1D4ED8] transition-colors">
               {project.name}
             </h3>
           </Link>
 
-          <p className="text-sm font-medium text-[#5B21B6] mb-3">{project.tagline}</p>
-          <p className="text-sm text-slate-600 leading-relaxed line-clamp-2 mb-5">
-            {project.overview}
+          <p className="text-sm font-semibold text-[#0A1D42]">{project.tagline}</p>
+
+          <p className="text-sm text-slate-600 leading-relaxed line-clamp-3">
+            {project.description}
           </p>
 
-          {/* Inline Features Summary */}
-          <p className="text-xs font-mono text-slate-500 py-3 border-y border-purple-100">
-            {project.availableUnits} of {project.totalUnits} Units Available ·{' '}
-            {project.features.slice(0, 3).join(' · ')}
-          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+            {project.highlights.slice(0, 4).map((hl, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs text-slate-700">
+                <CheckCircle2 className="w-4 h-4 text-[#0A1D42] shrink-0 mt-0.5" />
+                <span>{hl}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="pt-5 flex flex-wrap items-center justify-between gap-3">
-          <Link
-            to={`/developments/${project.slug}`}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#3B0764] hover:bg-[#4C1D95] text-white text-xs font-semibold uppercase tracking-wider transition-colors whitespace-nowrap"
-          >
-            <span>Explore Masterplan & Floor Plans</span>
-            <ArrowRight className="w-4 h-4 text-[#F59E0B]" />
-          </Link>
+        <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
+          <div className="text-xs">
+            <span className="text-slate-500">Allocation Availability: </span>
+            <span className="font-mono-tech font-bold text-[#07142B]">
+              {project.availableUnits} of {project.totalUnits} Units Left
+            </span>
+          </div>
 
-          <a
-            href={whatsappLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold transition-colors whitespace-nowrap"
-          >
-            <MessageCircle className="w-4 h-4 text-emerald-600" />
-            <span>WhatsApp Allocation Desk</span>
-          </a>
+          <div className="flex items-center gap-2.5">
+            <Link
+              to={`/developments/${project.id}`}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-[#FACC15] hover:bg-[#EAB308] text-[#07142B] border border-[#EAB308] transition-colors"
+            >
+              <span>Explore Estate</span>
+              <ArrowUpRight className="w-4 h-4" />
+            </Link>
+
+            <a
+              href={getWhatsAppUrl(
+                `Hello Etosmania Global Properties, I would like to receive the brochure and payment plan for *${project.name}* (${project.location}).`
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-[#0A1D42] hover:bg-[#07142B] text-white transition-colors"
+            >
+              <MessageCircle className="w-4 h-4 text-[#25D366]" />
+              <span>Request Brochure</span>
+            </a>
+          </div>
         </div>
       </div>
     </div>
